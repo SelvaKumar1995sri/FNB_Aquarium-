@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
 import ProductCard from "../../components/public/ProductCard";
+import VideoSlider from "../../components/public/VideoSlider";
 
 const PROCESS_STEPS = ["Consultation", "Design & Custom Build", "Installation", "Fish Adding", "Maintenance"];
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [productsError, setProductsError] = useState(false);
+  const [videos, setVideos] = useState([]);
+  const [videosError, setVideosError] = useState(false);
 
   useEffect(() => {
     apiClient
@@ -17,6 +20,13 @@ export default function Home() {
         setFeaturedProducts(response.data.results.filter((product) => product.is_featured));
       })
       .catch(() => setProductsError(true));
+  }, []);
+
+  useEffect(() => {
+    apiClient
+      .get("/videos/")
+      .then((response) => setVideos(response.data.results))
+      .catch(() => setVideosError(true));
   }, []);
 
   return (
@@ -39,6 +49,14 @@ export default function Home() {
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
+      </section>
+
+      <section className="px-4 py-12">
+        <h2 className="text-2xl font-semibold mb-6">Watch Us in Action</h2>
+        {videosError && (
+          <p className="text-red-600">Couldn't load videos — please try again later.</p>
+        )}
+        <VideoSlider videos={videos} />
       </section>
 
       <section className="px-4 py-12 bg-gray-50">
