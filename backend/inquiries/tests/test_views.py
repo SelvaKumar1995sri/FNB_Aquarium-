@@ -57,3 +57,17 @@ class InquiryStaffManagementTests(APITestCase):
         self.client.force_authenticate(user=customer)
         response = self.client.get("/api/v1/inquiries/")
         self.assertEqual(response.status_code, 403)
+
+    def test_status_filter_works(self):
+        # Create two inquiries with different statuses
+        inquiry_new = Inquiry.objects.create(name="Alice", phone="1111111111", message="New inquiry", status="new")
+        inquiry_contacted = Inquiry.objects.create(name="Bob", phone="2222222222", message="Contacted inquiry", status="contacted")
+
+        self.client.force_authenticate(user=self.staff)
+
+        # Filter by "contacted" status
+        response = self.client.get("/api/v1/inquiries/?status=contacted")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(data["results"][0]["id"], inquiry_contacted.id)
