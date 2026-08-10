@@ -39,4 +39,7 @@ class Command(BaseCommand):
         if not Video.objects.filter(youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ").exists():
             Video.objects.create(youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ", title="FNB Aqua Studio Tour", order=1)
 
+        if not Video.objects.filter(youtube_url="https://www.youtube.com/watch?v=jNQXAC9IVRw").exists():
+            Video.objects.create(youtube_url="https://www.youtube.com/watch?v=jNQXAC9IVRw", title="Tank Maintenance Walkthrough", order=2)
+
         self.stdout.write(self.style.SUCCESS("Seed data created."))

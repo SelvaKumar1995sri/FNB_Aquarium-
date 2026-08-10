@@ -1,3 +1,7 @@
+import { SHOP_INFO } from "../../content/shopInfo";
+
+const lowerFirst = (text) => text.charAt(0).toLowerCase() + text.slice(1);
+
 export default function About() {
   return (
     <div className="px-4 py-8 max-w-2xl">
@@ -8,8 +12,7 @@ export default function About() {
         aquascaping equipment.
       </p>
       <p>
-        Visit our studio at No:75/A, Velachery Main Rd, Green Court, Pallikaranai, Chennai,
-        Greater Chennai, Tamil Nadu 600100, open daily from 10am to 10pm.
+        Visit our studio at {SHOP_INFO.address}, {lowerFirst(SHOP_INFO.hoursSummary)}.
       </p>
     </div>
   );

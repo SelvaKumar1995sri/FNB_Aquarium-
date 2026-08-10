@@ -14,8 +14,11 @@ export default function CategoryProducts({ fixedSlug, title }) {
   const [categoriesError, setCategoriesError] = useState(false);
   const [products, setProducts] = useState([]);
   const [productsError, setProductsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(Boolean(slug));
 
   useEffect(() => {
+    setCategories([]);
+    setCategoriesError(false);
     apiClient
       .get("/categories/")
       .then((response) => {
@@ -38,29 +41,35 @@ export default function CategoryProducts({ fixedSlug, title }) {
   }, [categories, slug]);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    setProducts([]);
+    setProductsError(false);
     apiClient
       .get("/products/", { params: { category: slug } })
       .then((response) => {
         setProducts(response.data.results);
+        setIsLoading(false);
       })
-      .catch(() => setProductsError(true));
+      .catch(() => {
+        setProductsError(true);
+        setIsLoading(false);
+      });
   }, [slug]);
 
   return (
     <div className="px-4 py-8">
       <h1 className="text-2xl font-semibold mb-6">{title}</h1>
-      {!fixedSlug && (
-        <>
-          {categoriesError && (
-            <p className="text-red-600">Couldn't load categories — please try again later.</p>
-          )}
-          {subcategories.length > 0 && (
-            <div className="mb-8">
-              <CategoryGrid categories={subcategories} />
-            </div>
-          )}
-        </>
+      {categoriesError && (
+        <p className="text-red-600">Couldn't load categories — please try again later.</p>
+      )}
+      {subcategories.length > 0 && (
+        <div className="mb-8">
+          <CategoryGrid categories={subcategories} />
+        </div>
       )}
       {productsError && (
         <p className="text-red-600">Couldn't load products — please try again later.</p>
@@ -70,7 +79,9 @@ export default function CategoryProducts({ fixedSlug, title }) {
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
-      {products.length === 0 && !productsError && <p className="text-gray-500">No products in this category yet.</p>}
+      {!isLoading && products.length === 0 && !productsError && (
+        <p className="text-gray-500">No products in this category yet.</p>
+      )}
     </div>
   );
 }

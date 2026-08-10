@@ -14,6 +14,7 @@ import CategoryProducts from "./pages/public/CategoryProducts";
 import Contact from "./pages/public/Contact";
 import CustomTankBuild from "./pages/public/CustomTankBuild";
 import Home from "./pages/public/Home";
+import NotFound from "./pages/public/NotFound";
 import Portfolio from "./pages/public/Portfolio";
 import ProductDetail from "./pages/public/ProductDetail";
 import Services from "./pages/public/Services";
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/policies/:slug" element={<StaticPage />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/admin/login" element={<Login />} />
         <Route path="/admin" element={<AdminGuard />}>

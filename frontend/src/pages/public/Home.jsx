@@ -14,15 +14,19 @@ export default function Home() {
   const [videosError, setVideosError] = useState(false);
 
   useEffect(() => {
+    setFeaturedProducts([]);
+    setProductsError(false);
     apiClient
-      .get("/products/")
+      .get("/products/", { params: { is_featured: true } })
       .then((response) => {
-        setFeaturedProducts(response.data.results.filter((product) => product.is_featured));
+        setFeaturedProducts(response.data.results);
       })
       .catch(() => setProductsError(true));
   }, []);
 
   useEffect(() => {
+    setVideos([]);
+    setVideosError(false);
     apiClient
       .get("/videos/")
       .then((response) => setVideos(response.data.results))

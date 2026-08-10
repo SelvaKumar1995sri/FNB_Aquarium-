@@ -1,12 +1,6 @@
-const HOURS = [
-  ["Monday", "10am–10pm"],
-  ["Tuesday", "10am–10pm"],
-  ["Wednesday", "10am–10pm"],
-  ["Thursday", "10am–10pm"],
-  ["Friday", "10am–10pm"],
-  ["Saturday", "10am–10pm"],
-  ["Sunday", "10am–10pm"],
-];
+import { Link } from "react-router-dom";
+
+import { SHOP_INFO } from "../../content/shopInfo";
 
 export default function Footer() {
   return (
@@ -15,20 +9,20 @@ export default function Footer() {
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <h3 className="font-semibold mb-2">Visit Us</h3>
-          <p>No:75/A, Velachery Main Rd, Green Court, Pallikaranai, Chennai, Greater Chennai, Tamil Nadu 600100</p>
-          <p className="mt-2">Phone: 097898 27973</p>
+          <p>{SHOP_INFO.address}</p>
+          <p className="mt-2">Phone: {SHOP_INFO.phone}</p>
         </div>
         <div>
           <h3 className="font-semibold mb-2">Hours</h3>
           <ul>
-            {HOURS.map(([day, time]) => (
+            {SHOP_INFO.hoursByDay.map(([day, time]) => (
               <li key={day} className="flex justify-between max-w-xs">
                 <span>{day}</span>
                 <span>{time}</span>
               </li>
             ))}
           </ul>
-          <p className="text-yellow-400 text-sm mt-1">Hours may differ on public holidays.</p>
+          <p className="text-yellow-400 text-sm mt-1">{SHOP_INFO.holidayNote}</p>
         </div>
         <div>
           <h3 className="font-semibold mb-2">FNB Aquatic Studio</h3>
@@ -37,10 +31,10 @@ export default function Footer() {
         <div>
           <h3 className="font-semibold mb-2">Policies</h3>
           <ul className="grid gap-1">
-            <li><a href="/policies/privacy-policy">Privacy Policy</a></li>
-            <li><a href="/policies/shipping-policy">Shipping Policy</a></li>
-            <li><a href="/policies/terms-conditions">Terms & Conditions</a></li>
-            <li><a href="/policies/return-policy">Return Policy</a></li>
+            <li><Link to="/policies/privacy-policy">Privacy Policy</Link></li>
+            <li><Link to="/policies/shipping-policy">Shipping Policy</Link></li>
+            <li><Link to="/policies/terms-conditions">Terms & Conditions</Link></li>
+            <li><Link to="/policies/return-policy">Return Policy</Link></li>
           </ul>
         </div>
       </div>

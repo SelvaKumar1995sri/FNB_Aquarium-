@@ -10,6 +10,8 @@ export default function ProductDetail() {
   const [productError, setProductError] = useState(false);
 
   useEffect(() => {
+    setProduct(null);
+    setProductError(false);
     apiClient
       .get(`/products/${slug}/`)
       .then((response) => setProduct(response.data))
