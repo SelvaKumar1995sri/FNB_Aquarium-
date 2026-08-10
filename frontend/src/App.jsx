@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import PublicLayout from "./layouts/PublicLayout";
+import CategoryProducts from "./pages/public/CategoryProducts";
 import Home from "./pages/public/Home";
 
 export default function App() {
@@ -9,6 +10,10 @@ export default function App() {
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/fish" element={<CategoryProducts fixedSlug="fish" title="Fish" />} />
+          <Route path="/plants" element={<CategoryProducts fixedSlug="plants" title="Plants" />} />
+          <Route path="/products" element={<CategoryProducts title="Products" />} />
+          <Route path="/category/:slug" element={<CategoryProducts title="Category" />} />
         </Route>
       </Routes>
     </BrowserRouter>
