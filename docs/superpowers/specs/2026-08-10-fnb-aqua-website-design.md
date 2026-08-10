@@ -14,7 +14,7 @@ The site must be written with production/AWS-deployment best practices in mind f
 - **Frontend:** React + Vite + JSX + Tailwind CSS (matches existing project conventions, e.g. `The_fit_syndicate`)
 - **Backend:** Django + Django REST Framework (DRF)
 - **Auth:** `djangorestframework-simplejwt` for staff login (JWT access/refresh tokens); no customer auth
-- **Database:** SQLite for local dev; config driven by `DATABASE_URL` env var so it swaps to Postgres/RDS in production with no code change
+- **Database:** PostgreSQL everywhere — local dev runs Postgres too (via Docker Compose or a local install), production uses AWS RDS for PostgreSQL. Same engine in both environments (no SQLite→Postgres migration risk), chosen specifically because phase 2 (orders, payment records, cart) needs proper concurrent-write handling and transactional integrity that SQLite can't provide at scale. Connection config driven by a `DATABASE_URL` env var.
 - **Media storage:** Django's storage backend abstracted behind `django-storages`; local filesystem in dev, S3-compatible in production via env flag
 - **Repo layout:** monorepo with `frontend/` (Vite React app) and `backend/` (Django project) at the root
 
@@ -92,7 +92,10 @@ Seeded via a Django data migration / management command so the site is fully bro
 Since the target deployment is AWS serving a worldwide audience, the codebase should follow these practices from the start even though actual AWS provisioning is a later, separate step:
 
 - **Config via environment variables:** `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DATABASE_URL`, `CORS_ALLOWED_ORIGINS`, media storage backend — never hardcoded, `.env.example` provided, `.env` gitignored.
-- **Database:** use indexed fields for lookups (`slug`, `category`, `status`); paginate all list endpoints (DRF `PageNumberPagination`) so catalog growth doesn't degrade response times.
+- **Database:** use indexed fields for lookups (`slug`, `category`, `status`); paginate all list endpoints (DRF `PageNumberPagination`) so catalog growth doesn't degrade response times. Schema is designed to extend cleanly into phase 2 — `Inquiry` rows are structurally close to future `Order` rows, so the migration path to add `Order`/`Payment`/`Cart` models later is additive, not a rewrite.
+- **Database access/visibility:**
+  - Dev (local Postgres): DBeaver or pgAdmin (GUI), or `python manage.py dbshell` / `psql` and `python manage.py shell` (CLI/ORM) for quick inspection.
+  - Production (AWS RDS): never expose the DB port publicly. Connect through an SSH bastion host or AWS Systems Manager Session Manager port-forwarding into the private subnet, then point a local DB GUI at `localhost` through that tunnel. RDS security group only allows traffic from app servers and the bastion/SSM host.
 - **Abuse protection:** DRF throttling on the public inquiry-submission endpoint (rate-limit per IP) to prevent spam/flooding; serializer-level validation on all public input.
 - **Media/static:** static files served via whitenoise or CDN-ready config; media storage abstracted so it can point to S3 in production without code changes.
 - **Security:** HTTPS assumed in production (`SECURE_SSL_REDIRECT`, HSTS via env-gated settings), JWT short-lived access tokens with refresh, CORS locked to known origins, no secrets committed.
@@ -123,3 +126,4 @@ Redraw "FNB AQUATIC STUDIO" as a crisp high-resolution SVG/PNG in the same style
 - Swap seeded placeholder content/photos for real FNB catalog once shared.
 - Confirm final brand palette once real FNB site/assets are available.
 - AWS deployment execution (infra setup) as a separate follow-on task.
+- Phase 2 (cart, `Order`/`Payment` models, payment gateway integration) as a separate spec once phase 1 ships.
