@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import PublicLayout from "./layouts/PublicLayout";
 import CategoryProducts from "./pages/public/CategoryProducts";
+import CustomTankBuild from "./pages/public/CustomTankBuild";
 import Home from "./pages/public/Home";
 import ProductDetail from "./pages/public/ProductDetail";
 
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/products" element={<CategoryProducts title="Products" />} />
           <Route path="/category/:slug" element={<CategoryProducts title="Category" />} />
           <Route path="/product/:slug" element={<ProductDetail />} />
+          <Route path="/custom-tank-build" element={<CustomTankBuild />} />
         </Route>
       </Routes>
     </BrowserRouter>

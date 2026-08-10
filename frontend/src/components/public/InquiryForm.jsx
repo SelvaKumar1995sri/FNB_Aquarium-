@@ -55,7 +55,7 @@ export default function InquiryForm({ type = "general", product = null, extraFie
       {extraFields.map((field) => (
         <input
           key={field.name}
-          required
+          required={field.required !== false}
           placeholder={field.label}
           value={extra[field.name] || ""}
           onChange={(e) => setExtra({ ...extra, [field.name]: e.target.value })}
