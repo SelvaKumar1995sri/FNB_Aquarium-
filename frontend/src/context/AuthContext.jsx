@@ -1,3 +1,4 @@
+import axios from "axios";
 import { createContext, useContext, useEffect, useState } from "react";
 
 import { apiClient } from "../api/client";
@@ -8,6 +9,21 @@ export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(localStorage.getItem("access"));
   const [isStaff, setIsStaff] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Single fail-closed helper: clears both tokens from storage and resets
+  // in-memory state to logged-out. Every place in this file that needs to
+  // give up on a session (login()'s non-staff branch, logout(), the
+  // mount-verify effect's failure branches, and the response interceptor's
+  // failure branches below) calls this instead of repeating the four
+  // statements inline — that repetition is exactly what let an earlier copy
+  // (the mount-verify effect's plain .catch()) drift out of sync and miss
+  // setIsStaff(false).
+  const clearSession = () => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    setAccessToken(null);
+    setIsStaff(false);
+  };
 
   useEffect(() => {
     const interceptorId = apiClient.interceptors.request.use((config) => {
@@ -37,8 +53,11 @@ export function AuthProvider({ children }) {
 
         // A 401 from the login or refresh endpoints themselves is a real
         // credential failure, not an expired-access-token situation — never
-        // attempt a refresh for those (doing so would also recurse back into
-        // this same interceptor via the refresh call below).
+        // attempt a refresh for those. This check is now a belt-and-braces
+        // safety net rather than the only thing preventing recursion: the
+        // refresh call below is dispatched via plain `axios`, not the
+        // configured `apiClient`, so it structurally never re-enters this
+        // interceptor regardless of whether this string match stays correct.
         const isAuthEndpoint =
           typeof config.url === "string" &&
           (config.url.includes("/auth/login/") || config.url.includes("/auth/refresh/"));
@@ -57,15 +76,20 @@ export function AuthProvider({ children }) {
         if (!refreshToken) {
           // Nothing to refresh with. Fail closed: log out and let the
           // original 401 propagate so callers (and AdminGuard) react to it.
-          setAccessToken(null);
-          setIsStaff(false);
-          localStorage.removeItem("access");
-          localStorage.removeItem("refresh");
+          clearSession();
           return Promise.reject(error);
         }
 
         try {
-          const refreshResponse = await apiClient.post("/auth/refresh/", { refresh: refreshToken });
+          // Deliberately a bare `axios.post`, not `apiClient.post`: apiClient
+          // carries this very interceptor, so routing the refresh call
+          // through it would make recursion-safety depend entirely on the
+          // isAuthEndpoint string check above never drifting out of sync.
+          // Going around apiClient makes a refresh-call 401 structurally
+          // unable to re-enter this code at all.
+          const refreshResponse = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/refresh/`, {
+            refresh: refreshToken,
+          });
           const newAccess = refreshResponse.data.access;
           localStorage.setItem("access", newAccess);
           setAccessToken(newAccess);
@@ -78,10 +102,7 @@ export function AuthProvider({ children }) {
           // failed (e.g. network error). Fail closed the same way as above,
           // and propagate the ORIGINAL 401 (not refreshError) so existing
           // .catch() handlers keep seeing the failure shape they expect.
-          setAccessToken(null);
-          setIsStaff(false);
-          localStorage.removeItem("access");
-          localStorage.removeItem("refresh");
+          clearSession();
           return Promise.reject(error);
         }
       }
@@ -110,18 +131,13 @@ export function AuthProvider({ children }) {
           // isStaff false, which would otherwise loop between /admin and
           // /admin/login (Login redirects on isAuthenticated, AdminGuard redirects
           // back on !isStaff).
-          setAccessToken(null);
-          setIsStaff(false);
-          localStorage.removeItem("access");
-          localStorage.removeItem("refresh");
+          clearSession();
           return;
         }
         setIsStaff(true);
       })
       .catch(() => {
-        setAccessToken(null);
-        localStorage.removeItem("access");
-        localStorage.removeItem("refresh");
+        clearSession();
       })
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,6 +151,9 @@ export function AuthProvider({ children }) {
     // /admin and /admin/login while the isStaff check races the navigation.
     const me = await apiClient.get("/auth/me/", { headers: { Authorization: `Bearer ${access}` } });
     if (!me.data.is_staff) {
+      // Fail closed here too: a valid-but-non-staff login must not leave any
+      // stale prior session lingering in storage/state.
+      clearSession();
       throw new Error("Not staff");
     }
     localStorage.setItem("access", access);
@@ -144,10 +163,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    setAccessToken(null);
-    setIsStaff(false);
+    clearSession();
   };
 
   return (
