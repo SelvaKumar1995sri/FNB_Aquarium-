@@ -32,9 +32,9 @@ export default function Header() {
           <span className="block w-6 h-0.5 bg-white mb-1" />
           <span className="block w-6 h-0.5 bg-white" />
         </button>
-        <nav className="hidden md:flex gap-6">
+        <nav className="hidden md:flex gap-4 lg:gap-6">
           {NAV_LINKS.map((link) => (
-            <NavLink key={link.to} to={link.to} className="hover:text-yellow-400">
+            <NavLink key={link.to} to={link.to} className="hover:text-yellow-400 md:text-sm lg:text-base">
               {link.label}
             </NavLink>
           ))}
