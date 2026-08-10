@@ -19,20 +19,42 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // Runs once on mount only (not on every accessToken change) — login()/logout()
+    // already manage accessToken/isStaff state directly and correctly, so re-running
+    // this on every accessToken change just risks a spurious second /auth/me/ call
+    // (e.g. right after a successful login()) clobbering already-verified state if
+    // that second call fails transiently. This effect's job is solely to restore
+    // (or fail-closed reject) a pre-existing session on page load.
     if (!accessToken) {
       setIsLoading(false);
       return;
     }
     apiClient
       .get("/auth/me/")
-      .then((response) => setIsStaff(response.data.is_staff))
+      .then((response) => {
+        if (!response.data.is_staff) {
+          // Token belongs to a non-staff user (e.g. staff flag revoked mid-session,
+          // or a stale token from before staff was enforced at login time). Fail
+          // closed: clear the session instead of leaving isAuthenticated true with
+          // isStaff false, which would otherwise loop between /admin and
+          // /admin/login (Login redirects on isAuthenticated, AdminGuard redirects
+          // back on !isStaff).
+          setAccessToken(null);
+          setIsStaff(false);
+          localStorage.removeItem("access");
+          localStorage.removeItem("refresh");
+          return;
+        }
+        setIsStaff(true);
+      })
       .catch(() => {
         setAccessToken(null);
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
       })
       .finally(() => setIsLoading(false));
-  }, [accessToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = async (username, password) => {
     const response = await apiClient.post("/auth/login/", { username, password });
