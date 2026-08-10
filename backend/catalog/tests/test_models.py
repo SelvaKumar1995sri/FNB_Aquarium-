@@ -69,3 +69,10 @@ class VideoModelTests(TestCase):
         self.assertEqual(
             video.default_thumbnail_url, "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg"
         )
+
+    def test_default_thumbnail_url_is_empty_for_malformed_url(self):
+        video = Video.objects.create(
+            title="Tank tour", youtube_url="https://example.com/not-a-youtube-link"
+        )
+        self.assertEqual(video.video_id, "")
+        self.assertEqual(video.default_thumbnail_url, "")

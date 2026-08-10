@@ -68,6 +68,22 @@ class ProductListViewTests(APITestCase):
         data = response.json()
         self.assertEqual(data["results"], [])
 
+    def test_filter_products_by_is_featured(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        Product.objects.create(
+            name="Discus", slug="discus", category=fish, price=1200, is_featured=True
+        )
+        Product.objects.create(
+            name="Anubias", slug="anubias", category=fish, price=300, is_featured=False
+        )
+
+        response = self.client.get("/api/v1/products/", {"is_featured": "true"})
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()["results"]
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["slug"], "discus")
+
     def test_retrieve_product_by_slug_includes_nested_images(self):
         fish = Category.objects.create(name="Fish", slug="fish")
         discus = Product.objects.create(name="Discus", slug="discus", category=fish, price=1200)

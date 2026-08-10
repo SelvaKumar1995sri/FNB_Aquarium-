@@ -1,7 +1,11 @@
-from rest_framework.test import APITestCase
+from unittest import mock
+
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from rest_framework.test import APITestCase
 
 from inquiries.models import Inquiry
+from inquiries.throttles import InquiryCreateThrottle
 
 User = get_user_model()
 
@@ -71,3 +75,39 @@ class InquiryStaffManagementTests(APITestCase):
         data = response.json()
         self.assertEqual(data["count"], 1)
         self.assertEqual(data["results"][0]["id"], inquiry_contacted.id)
+
+
+class InquiryThrottleTests(APITestCase):
+    """
+    Note: `@override_settings(REST_FRAMEWORK={...})` alone does NOT change the
+    effective throttle rate here. DRF's `SimpleRateThrottle.THROTTLE_RATES` is
+    bound to `api_settings.DEFAULT_THROTTLE_RATES` once, as a class attribute,
+    at throttling.py import time. Django's `setting_changed` signal makes DRF
+    reload the `api_settings` singleton's cache, but that doesn't retroactively
+    rewrite the already-bound `THROTTLE_RATES` class attribute on
+    `InquiryCreateThrottle` — confirmed empirically: instantiating the
+    throttle inside an `override_settings` block still reports the original
+    "5/hour" rate. So we patch `InquiryCreateThrottle.THROTTLE_RATES` directly,
+    which is what the throttle actually reads from.
+    """
+
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
+    @mock.patch.object(InquiryCreateThrottle, "THROTTLE_RATES", {"inquiry_create": "2/hour"})
+    def test_exceeding_rate_limit_returns_429(self):
+        payload = {"name": "Priya", "phone": "9876543210", "message": "Hi"}
+
+        first_response = self.client.post("/api/v1/inquiries/", payload)
+        second_response = self.client.post("/api/v1/inquiries/", payload)
+        third_response = self.client.post("/api/v1/inquiries/", payload)
+
+        # The first two requests must actually succeed under the patched
+        # 2/hour rate — otherwise a 429 on the third request would prove
+        # nothing about the throttle actually being exercised.
+        self.assertEqual(first_response.status_code, 201)
+        self.assertEqual(second_response.status_code, 201)
+        self.assertEqual(third_response.status_code, 429)

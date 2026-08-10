@@ -100,4 +100,6 @@ class Video(models.Model):
 
     @property
     def default_thumbnail_url(self):
+        if not self.video_id:
+            return ""
         return f"https://img.youtube.com/vi/{self.video_id}/hqdefault.jpg"

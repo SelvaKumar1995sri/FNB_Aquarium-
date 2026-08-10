@@ -26,6 +26,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         category_slug = self.request.query_params.get("category")
         if category_slug:
             queryset = queryset.filter(category__slug=category_slug)
+        is_featured = self.request.query_params.get("is_featured")
+        if is_featured is not None:
+            queryset = queryset.filter(is_featured=is_featured.lower() in ("true", "1"))
         return queryset
 
 
