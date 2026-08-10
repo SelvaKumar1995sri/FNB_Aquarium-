@@ -7,7 +7,7 @@ export default function Contact() {
         <h1 className="text-2xl font-semibold mb-4">Contact Us</h1>
         <p>No:75/A, Velachery Main Rd, Green Court, Pallikaranai, Chennai, Greater Chennai, Tamil Nadu 600100</p>
         <p className="mt-2">Phone: 097898 27973</p>
-        <p className="mt-2 text-sm text-gray-600">Open daily 10am–10pm. Hours may differ on public holidays.</p>
+        <p className="mt-2 text-sm text-gray-600">Open daily from 10am to 10pm. Hours may differ on public holidays.</p>
       </div>
       <div>
         <h2 className="text-xl font-semibold mb-3">Send us a message</h2>
