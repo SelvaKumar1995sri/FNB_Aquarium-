@@ -10,6 +10,7 @@ import Home from "./pages/public/Home";
 import Portfolio from "./pages/public/Portfolio";
 import ProductDetail from "./pages/public/ProductDetail";
 import Services from "./pages/public/Services";
+import StaticPage from "./pages/public/StaticPage";
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/policies/:slug" element={<StaticPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

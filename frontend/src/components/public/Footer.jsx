@@ -11,7 +11,7 @@ const HOURS = [
 export default function Footer() {
   return (
     <footer className="bg-brand-dark text-white px-4 py-8 mt-auto">
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <h3 className="font-semibold mb-2">Visit Us</h3>
           <p>No:75/A, Velachery Main Rd, Green Court, Pallikaranai, Chennai, Greater Chennai, Tamil Nadu 600100</p>
@@ -32,6 +32,15 @@ export default function Footer() {
         <div>
           <h3 className="font-semibold mb-2">FNB Aquatic Studio</h3>
           <p>Custom aquariums, aquascaping, and aquatic livestock.</p>
+        </div>
+        <div>
+          <h3 className="font-semibold mb-2">Policies</h3>
+          <ul className="grid gap-1">
+            <li><a href="/policies/privacy-policy">Privacy Policy</a></li>
+            <li><a href="/policies/shipping-policy">Shipping Policy</a></li>
+            <li><a href="/policies/terms-conditions">Terms & Conditions</a></li>
+            <li><a href="/policies/return-policy">Return Policy</a></li>
+          </ul>
         </div>
       </div>
     </footer>
