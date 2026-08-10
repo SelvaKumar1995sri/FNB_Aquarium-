@@ -3561,3 +3561,19 @@ If any breakpoint issue is found, fix it directly in the relevant component from
 git add -A
 git commit -m "chore: responsive QA pass and production build verification"
 ```
+
+---
+
+## Phase 6 — Final whole-branch review remediation
+
+After Tasks 1–26 completed and passed the final whole-branch review, the review surfaced three Critical cross-cutting issues (uploaded media never served, admin panel had no image upload/edit path, JWT refresh built but never wired up) plus several Important/Minor findings and a full triage of the per-task ledger's deferred items. The human partner decided to expand the admin panel's scope now rather than defer it. Tasks 27–33 below address all of it. Full task specs live as standalone brief files (this phase was scoped directly from the review rather than re-authored into this document's usual per-task format) at:
+
+- `.superpowers/sdd/2026-08-10-fnb-aqua-website/task-27-brief.md` — Backend correctness + hardening bundle (media serving, JWT lifetimes, wsgi safety, proxy header, SECRET_KEY placeholder, server-side `is_featured` filter, thumbnail-URL guard, Django admin registrations, throttle test)
+- `.superpowers/sdd/2026-08-10-fnb-aqua-website/task-28-brief.md` — Public-site bug fixes bundle (subcategory-grid gate, stale-fetch-state reset, loading states, shared shop-info content, footer `<Link>` fix, page title/404 route, second seed video)
+- `.superpowers/sdd/2026-08-10-fnb-aqua-website/task-29-brief.md` — JWT refresh interceptor (security-sensitive, standalone)
+- `.superpowers/sdd/2026-08-10-fnb-aqua-website/task-30-brief.md` — Admin hygiene bundle (`describeError` consolidation, delete confirmation, inquiry product/email display)
+- `.superpowers/sdd/2026-08-10-fnb-aqua-website/task-31-brief.md` — Admin Categories: edit mode + image upload + parent field
+- `.superpowers/sdd/2026-08-10-fnb-aqua-website/task-32-brief.md` — Admin Products: edit mode + image upload
+- `.superpowers/sdd/2026-08-10-fnb-aqua-website/task-33-brief.md` — Admin Videos: edit mode + thumbnail upload + order/is_active
+
+Dependency order: 27 → 28, 30 → 31 → 32, 33 → 29 (29 is independent, can run any time after 27's `SIMPLE_JWT` settings land).
