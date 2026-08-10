@@ -1,6 +1,8 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+import AdminGuard from "./components/admin/AdminGuard";
 import PublicLayout from "./layouts/PublicLayout";
+import Login from "./pages/admin/Login";
 import About from "./pages/public/About";
 import Blog from "./pages/public/Blog";
 import CategoryProducts from "./pages/public/CategoryProducts";
@@ -30,6 +32,10 @@ export default function App() {
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/policies/:slug" element={<StaticPage />} />
+        </Route>
+        <Route path="/admin/login" element={<Login />} />
+        <Route path="/admin" element={<AdminGuard />}>
+          <Route index element={<div className="p-8">Admin Dashboard (Task 23)</div>} />
         </Route>
       </Routes>
     </BrowserRouter>
