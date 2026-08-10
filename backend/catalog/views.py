@@ -1,23 +1,24 @@
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 
-from .models import BlogPost, Category, PortfolioItem, Product, Video
+from .models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
+from .permissions import IsStaffOrReadOnly
 from .serializers import (
     BlogPostSerializer, CategorySerializer, PortfolioItemSerializer,
-    ProductSerializer, VideoSerializer,
+    ProductImageSerializer, ProductSerializer, VideoSerializer,
 )
 
 
-class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsStaffOrReadOnly]
     lookup_field = "slug"
 
 
-class ProductViewSet(viewsets.ReadOnlyModelViewSet):
+class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsStaffOrReadOnly]
     lookup_field = "slug"
 
     def get_queryset(self):
@@ -41,7 +42,13 @@ class BlogPostViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = "slug"
 
 
-class VideoViewSet(viewsets.ReadOnlyModelViewSet):
+class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.filter(is_active=True)
     serializer_class = VideoSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsStaffOrReadOnly]
+
+
+class ProductImageViewSet(viewsets.ModelViewSet):
+    queryset = ProductImage.objects.all()
+    serializer_class = ProductImageSerializer
+    permission_classes = [IsAdminUser]

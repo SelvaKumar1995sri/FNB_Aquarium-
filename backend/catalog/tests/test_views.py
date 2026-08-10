@@ -1,6 +1,10 @@
+from django.contrib.auth import get_user_model
+
 from rest_framework.test import APITestCase
 
 from catalog.models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
+
+User = get_user_model()
 
 
 class CategoryListViewTests(APITestCase):
@@ -21,10 +25,12 @@ class CategoryListViewTests(APITestCase):
         self.assertEqual(data["name"], "Fish")
         self.assertEqual(data["description"], "Freshwater fish")
 
-    def test_write_methods_are_rejected(self):
+    def test_write_methods_are_rejected_for_anonymous_users(self):
+        # Categories are now a staff-only write API (see CategoryWritePermissionTests
+        # below) — anonymous writes are blocked by permissions (401), not routing (405).
         response = self.client.post("/api/v1/categories/", {"name": "New", "slug": "new"})
 
-        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.status_code, 401)
 
 
 class ProductListViewTests(APITestCase):
@@ -109,3 +115,22 @@ class VideoListViewTests(APITestCase):
         results = response.json()["results"]
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["title"], "Active")
+
+
+class CategoryWritePermissionTests(APITestCase):
+    def test_anonymous_cannot_create_category(self):
+        response = self.client.post("/api/v1/categories/", {"name": "Fish", "slug": "fish"})
+        self.assertEqual(response.status_code, 401)
+
+    def test_non_staff_cannot_create_category(self):
+        user = User.objects.create_user(username="customer", password="pw12345")
+        self.client.force_authenticate(user=user)
+        response = self.client.post("/api/v1/categories/", {"name": "Fish", "slug": "fish"})
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_can_create_category(self):
+        staff = User.objects.create_user(username="staff", password="pw12345", is_staff=True)
+        self.client.force_authenticate(user=staff)
+        response = self.client.post("/api/v1/categories/", {"name": "Fish", "slug": "fish"})
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(Category.objects.filter(slug="fish").exists())
