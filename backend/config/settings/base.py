@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "core",
     "catalog",
-    # "inquiries",  # Task 6 adds this app via `startapp inquiries` — re-enable then.
+    "inquiries",
 ]
 
 MIDDLEWARE = [
