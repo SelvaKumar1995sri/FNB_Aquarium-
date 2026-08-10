@@ -8,6 +8,7 @@ export default function ProductsManager() {
   const [categories, setCategories] = useState([]);
   const [categoriesError, setCategoriesError] = useState(false);
   const [form, setForm] = useState({ name: "", slug: "", category: "", price: "", description: "" });
+  const [formError, setFormError] = useState("");
 
   const load = () =>
     apiClient
@@ -29,16 +30,35 @@ export default function ProductsManager() {
       .catch(() => setCategoriesError(true));
   }, []);
 
+  const describeError = (error, fallback) => {
+    const data = error.response?.data;
+    if (data && typeof data === "object") {
+      const detail = Object.values(data).flat().filter(Boolean).join(" ");
+      if (detail) return detail;
+    }
+    return fallback;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await apiClient.post("/products/", { ...form, category: Number(form.category), price: Number(form.price) });
-    setForm({ name: "", slug: "", category: "", price: "", description: "" });
-    load();
+    try {
+      await apiClient.post("/products/", { ...form, category: Number(form.category), price: Number(form.price) });
+      setForm({ name: "", slug: "", category: "", price: "", description: "" });
+      setFormError("");
+      load();
+    } catch (error) {
+      setFormError(describeError(error, "Couldn't save the product — please check the fields and try again."));
+    }
   };
 
   const handleDelete = async (slug) => {
-    await apiClient.delete(`/products/${slug}/`);
-    load();
+    try {
+      await apiClient.delete(`/products/${slug}/`);
+      setFormError("");
+      load();
+    } catch (error) {
+      setFormError(describeError(error, "Couldn't delete the product — please try again."));
+    }
   };
 
   return (
@@ -60,6 +80,7 @@ export default function ProductsManager() {
         <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="border rounded px-3 py-2" />
         <button type="submit" className="bg-brand-dark text-white rounded px-4 py-2">Add Product</button>
       </form>
+      {formError && <p className="text-red-600 mb-4">{formError}</p>}
       {productsError && (
         <p className="text-red-600">Couldn't load products — please try again later.</p>
       )}

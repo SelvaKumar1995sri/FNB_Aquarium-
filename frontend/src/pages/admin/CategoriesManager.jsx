@@ -6,6 +6,7 @@ export default function CategoriesManager() {
   const [categories, setCategories] = useState([]);
   const [categoriesError, setCategoriesError] = useState(false);
   const [form, setForm] = useState({ name: "", slug: "" });
+  const [formError, setFormError] = useState("");
 
   const load = () =>
     apiClient
@@ -20,16 +21,35 @@ export default function CategoriesManager() {
     load();
   }, []);
 
+  const describeError = (error, fallback) => {
+    const data = error.response?.data;
+    if (data && typeof data === "object") {
+      const detail = Object.values(data).flat().filter(Boolean).join(" ");
+      if (detail) return detail;
+    }
+    return fallback;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await apiClient.post("/categories/", form);
-    setForm({ name: "", slug: "" });
-    load();
+    try {
+      await apiClient.post("/categories/", form);
+      setForm({ name: "", slug: "" });
+      setFormError("");
+      load();
+    } catch (error) {
+      setFormError(describeError(error, "Couldn't save the category — please check the fields and try again."));
+    }
   };
 
   const handleDelete = async (slug) => {
-    await apiClient.delete(`/categories/${slug}/`);
-    load();
+    try {
+      await apiClient.delete(`/categories/${slug}/`);
+      setFormError("");
+      load();
+    } catch (error) {
+      setFormError(describeError(error, "Couldn't delete the category — please try again."));
+    }
   };
 
   return (
@@ -52,6 +72,7 @@ export default function CategoriesManager() {
         />
         <button type="submit" className="bg-brand-dark text-white rounded px-4 py-2">Add</button>
       </form>
+      {formError && <p className="text-red-600 mb-4">{formError}</p>}
       {categoriesError && (
         <p className="text-red-600">Couldn't load categories — please try again later.</p>
       )}
