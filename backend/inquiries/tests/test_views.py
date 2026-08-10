@@ -1,6 +1,9 @@
 from rest_framework.test import APITestCase
+from django.contrib.auth import get_user_model
 
 from inquiries.models import Inquiry
+
+User = get_user_model()
 
 
 class InquiryCreateViewTests(APITestCase):
@@ -29,3 +32,28 @@ class InquiryCreateViewTests(APITestCase):
     def test_public_cannot_list_inquiries(self):
         response = self.client.get("/api/v1/inquiries/")
         self.assertIn(response.status_code, (401, 403))
+
+
+class InquiryStaffManagementTests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(username="staff", password="pw12345", is_staff=True)
+        self.inquiry = Inquiry.objects.create(name="Priya", phone="9876543210", message="Hi")
+
+    def test_staff_can_list_inquiries(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get("/api/v1/inquiries/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+
+    def test_staff_can_update_status(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.patch(f"/api/v1/inquiries/{self.inquiry.id}/", {"status": "contacted"})
+        self.assertEqual(response.status_code, 200)
+        self.inquiry.refresh_from_db()
+        self.assertEqual(self.inquiry.status, "contacted")
+
+    def test_non_staff_cannot_list_inquiries(self):
+        customer = User.objects.create_user(username="customer", password="pw12345")
+        self.client.force_authenticate(user=customer)
+        response = self.client.get("/api/v1/inquiries/")
+        self.assertEqual(response.status_code, 403)

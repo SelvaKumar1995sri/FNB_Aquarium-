@@ -7,8 +7,14 @@ from .throttles import InquiryCreateThrottle
 
 
 class InquiryViewSet(viewsets.ModelViewSet):
-    queryset = Inquiry.objects.select_related("product").all()
     http_method_names = ["get", "post", "patch"]
+
+    def get_queryset(self):
+        queryset = Inquiry.objects.select_related("product").all()
+        status_param = self.request.query_params.get("status")
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "create":
