@@ -4,8 +4,10 @@ import AdminGuard from "./components/admin/AdminGuard";
 import AdminLayout from "./layouts/AdminLayout";
 import PublicLayout from "./layouts/PublicLayout";
 import CategoriesManager from "./pages/admin/CategoriesManager";
+import InquiriesManager from "./pages/admin/InquiriesManager";
 import Login from "./pages/admin/Login";
 import ProductsManager from "./pages/admin/ProductsManager";
+import VideosManager from "./pages/admin/VideosManager";
 import About from "./pages/public/About";
 import Blog from "./pages/public/Blog";
 import CategoryProducts from "./pages/public/CategoryProducts";
@@ -42,6 +44,8 @@ export default function App() {
             <Route index element={<Navigate to="/admin/categories" replace />} />
             <Route path="categories" element={<CategoriesManager />} />
             <Route path="products" element={<ProductsManager />} />
+            <Route path="videos" element={<VideosManager />} />
+            <Route path="inquiries" element={<InquiriesManager />} />
           </Route>
         </Route>
       </Routes>
