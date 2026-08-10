@@ -102,6 +102,7 @@ Since the target deployment is AWS serving a worldwide audience, the codebase sh
 - **Process/serving:** Django served via gunicorn behind a reverse proxy in production (not `runserver`); settings split into `base/dev/production` modules.
 - **Frontend performance:** route-based code-splitting (`React.lazy`), lazy-loaded images, production Vite build with asset hashing/caching headers.
 - **Logging:** structured logging for API errors in production (not print statements).
+- **Responsive design:** mobile-first Tailwind layout across the entire public site (breakpoints for phone/tablet/laptop/desktop) — collapsible hamburger nav on mobile, fluid product/category grids, touch-friendly tap targets, and the video slider swipeable on touch devices. The admin dashboard is optimized for tablet/laptop but must remain usable on a mobile browser too, since staff may need to check inquiries on the go.
 
 Actual AWS resource provisioning (RDS, S3 bucket, EC2/ECS, CloudFront, domain/SSL) is out of scope for this build — the code is written so that step is a configuration change, not a rewrite.
 
