@@ -1,3 +1,5 @@
+import re
+
 from django.db import models
 
 
@@ -44,3 +46,58 @@ class ProductImage(models.Model):
 
     class Meta:
         ordering = ["order"]
+
+
+class PortfolioItem(models.Model):
+    title = models.CharField(max_length=200)
+    image = models.ImageField(upload_to="portfolio/", null=True, blank=True)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return self.title
+
+
+class BlogPost(models.Model):
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=210, unique=True)
+    body = models.TextField()
+    cover_image = models.ImageField(upload_to="blog/", null=True, blank=True)
+    published_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-published_at"]
+
+    def __str__(self):
+        return self.title
+
+
+YOUTUBE_ID_PATTERN = re.compile(
+    r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([A-Za-z0-9_-]{11})"
+)
+
+
+class Video(models.Model):
+    title = models.CharField(max_length=200)
+    youtube_url = models.URLField()
+    thumbnail = models.ImageField(upload_to="videos/", null=True, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def video_id(self):
+        match = YOUTUBE_ID_PATTERN.search(self.youtube_url)
+        return match.group(1) if match else ""
+
+    @property
+    def default_thumbnail_url(self):
+        return f"https://img.youtube.com/vi/{self.video_id}/hqdefault.jpg"

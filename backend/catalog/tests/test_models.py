@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from catalog.models import Category, Product, ProductImage
+from catalog.models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
 
 
 class CategoryModelTests(TestCase):
@@ -37,3 +37,35 @@ class ProductImageModelTests(TestCase):
         )
         ProductImage.objects.create(product=product, alt_text="Front view", order=1)
         self.assertEqual(product.images.count(), 1)
+
+
+class PortfolioItemModelTests(TestCase):
+    def test_str_returns_title(self):
+        item = PortfolioItem.objects.create(title="Living Room Reef Tank")
+        self.assertEqual(str(item), "Living Room Reef Tank")
+
+
+class BlogPostModelTests(TestCase):
+    def test_str_returns_title(self):
+        post = BlogPost.objects.create(title="How to cycle a new tank", slug="how-to-cycle-a-new-tank", body="...")
+        self.assertEqual(str(post), "How to cycle a new tank")
+
+
+class VideoModelTests(TestCase):
+    def test_video_id_parses_watch_url(self):
+        video = Video.objects.create(
+            title="Tank tour", youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        )
+        self.assertEqual(video.video_id, "dQw4w9WgXcQ")
+
+    def test_video_id_parses_short_url(self):
+        video = Video.objects.create(title="Tank tour", youtube_url="https://youtu.be/dQw4w9WgXcQ")
+        self.assertEqual(video.video_id, "dQw4w9WgXcQ")
+
+    def test_default_thumbnail_url_uses_video_id(self):
+        video = Video.objects.create(
+            title="Tank tour", youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        )
+        self.assertEqual(
+            video.default_thumbnail_url, "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg"
+        )
