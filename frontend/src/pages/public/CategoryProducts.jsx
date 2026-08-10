@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
 import CategoryGrid from "../../components/public/CategoryGrid";
 import ProductCard from "../../components/public/ProductCard";
 
+const TOP_LEVEL_NAV_SLUGS = ["fish", "plants"];
+
 export default function CategoryProducts({ fixedSlug, title }) {
   const params = useParams();
   const slug = fixedSlug || params.slug;
-  const [subcategories, setSubcategories] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [categoriesError, setCategoriesError] = useState(false);
   const [products, setProducts] = useState([]);
   const [productsError, setProductsError] = useState(false);
@@ -17,10 +19,23 @@ export default function CategoryProducts({ fixedSlug, title }) {
     apiClient
       .get("/categories/")
       .then((response) => {
-        setSubcategories(response.data.results.filter((category) => category.parent && String(category.parent) !== ""));
+        setCategories(response.data.results);
       })
       .catch(() => setCategoriesError(true));
   }, []);
+
+  const subcategories = useMemo(() => {
+    if (!slug) {
+      // Generic /products page: show top-level categories other than
+      // Fish/Plants, which already have their own dedicated nav routes.
+      return categories.filter((category) => !category.parent && !TOP_LEVEL_NAV_SLUGS.includes(category.slug));
+    }
+    // /category/:slug (or a fixedSlug page): show the actual children of
+    // the category currently being viewed.
+    const currentCategory = categories.find((category) => category.slug === slug);
+    if (!currentCategory) return [];
+    return categories.filter((category) => category.parent === currentCategory.id);
+  }, [categories, slug]);
 
   useEffect(() => {
     if (!slug) return;
