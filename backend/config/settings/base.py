@@ -21,7 +21,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "core",
-    # "catalog",   # Task 2 adds this app via `startapp catalog` — re-enable then.
+    "catalog",
     # "inquiries",  # Task 6 adds this app via `startapp inquiries` — re-enable then.
 ]
 
