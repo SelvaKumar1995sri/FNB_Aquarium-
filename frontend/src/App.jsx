@@ -4,6 +4,7 @@ import PublicLayout from "./layouts/PublicLayout";
 import About from "./pages/public/About";
 import Blog from "./pages/public/Blog";
 import CategoryProducts from "./pages/public/CategoryProducts";
+import Contact from "./pages/public/Contact";
 import CustomTankBuild from "./pages/public/CustomTankBuild";
 import Home from "./pages/public/Home";
 import Portfolio from "./pages/public/Portfolio";
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/custom-tank-build" element={<CustomTankBuild />} />
           <Route path="/services" element={<Services />} />
           <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/blog" element={<Blog />} />
         </Route>
