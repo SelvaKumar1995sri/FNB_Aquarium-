@@ -11,6 +11,7 @@ const HOURS = [
 export default function Footer() {
   return (
     <footer className="bg-brand-dark text-white px-4 py-8 mt-auto">
+      <img src="/logo.svg" alt="FNB Aquatic Studio" className="h-12 w-auto mb-3" />
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <h3 className="font-semibold mb-2">Visit Us</h3>

@@ -1,0 +1,6 @@
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="FNB Aquatic Studio logo">
+  <rect width="400" height="160" fill="#0b0f14"/>
+  <path d="M40 60 Q100 20 160 60 T280 60 T360 60" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <text x="200" y="105" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="46" fill="#ffffff" letter-spacing="4">FNB</text>
+  <text x="200" y="135" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="600" font-size="16" fill="#ffffff" letter-spacing="3">AQUATIC STUDIO</text>
+</svg>
