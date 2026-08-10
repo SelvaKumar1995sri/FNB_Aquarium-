@@ -8,11 +8,15 @@ const PROCESS_STEPS = ["Consultation", "Design & Custom Build", "Installation", 
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [productsError, setProductsError] = useState(false);
 
   useEffect(() => {
-    apiClient.get("/products/").then((response) => {
-      setFeaturedProducts(response.data.results.filter((product) => product.is_featured));
-    });
+    apiClient
+      .get("/products/")
+      .then((response) => {
+        setFeaturedProducts(response.data.results.filter((product) => product.is_featured));
+      })
+      .catch(() => setProductsError(true));
   }, []);
 
   return (
@@ -27,6 +31,9 @@ export default function Home() {
 
       <section className="px-4 py-12">
         <h2 className="text-2xl font-semibold mb-6">Featured Products</h2>
+        {productsError && (
+          <p className="text-red-600">Couldn't load featured products — please try again later.</p>
+        )}
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
