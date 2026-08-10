@@ -1,10 +1,21 @@
-from django.contrib.auth import get_user_model
+import io
 
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+from PIL import Image
 from rest_framework.test import APITestCase
 
 from catalog.models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
 
 User = get_user_model()
+
+
+def make_test_image(name="test.png"):
+    buffer = io.BytesIO()
+    Image.new("RGB", (1, 1)).save(buffer, format="PNG")
+    buffer.seek(0)
+    return SimpleUploadedFile(name, buffer.read(), content_type="image/png")
 
 
 class CategoryListViewTests(APITestCase):
@@ -116,6 +127,20 @@ class VideoListViewTests(APITestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["title"], "Active")
 
+    def test_staff_can_see_inactive_videos(self):
+        staff = User.objects.create_user(username="video-staff", password="pw12345", is_staff=True)
+        self.client.force_authenticate(user=staff)
+        Video.objects.create(title="Active", youtube_url="https://youtu.be/aaaaaaaaaaa", is_active=True)
+        Video.objects.create(title="Inactive", youtube_url="https://youtu.be/bbbbbbbbbbb", is_active=False)
+
+        response = self.client.get("/api/v1/videos/")
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()["results"]
+        self.assertEqual(len(results), 2)
+        titles = {result["title"] for result in results}
+        self.assertEqual(titles, {"Active", "Inactive"})
+
 
 class CategoryWritePermissionTests(APITestCase):
     def test_anonymous_cannot_create_category(self):
@@ -134,3 +159,65 @@ class CategoryWritePermissionTests(APITestCase):
         response = self.client.post("/api/v1/categories/", {"name": "Fish", "slug": "fish"})
         self.assertEqual(response.status_code, 201)
         self.assertTrue(Category.objects.filter(slug="fish").exists())
+
+
+class ProductImageWritePermissionTests(APITestCase):
+    """
+    ProductImageViewSet uses IsAdminUser (per task-5-brief.md Step 4 and the
+    Interfaces line `GET/POST/PUT/DELETE /api/v1/product-images/ (staff only)`),
+    which gates ALL methods -- unlike IsStaffOrReadOnly, it has no SAFE_METHODS
+    carve-out. So anonymous/non-staff GET is rejected here too, not just writes.
+    """
+
+    def setUp(self):
+        self.category = Category.objects.create(name="Fish", slug="fish")
+        self.product = Product.objects.create(
+            name="Discus", slug="discus", category=self.category, price=1200
+        )
+
+    def test_anonymous_cannot_list_product_images(self):
+        response = self.client.get("/api/v1/product-images/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_anonymous_cannot_create_product_image(self):
+        response = self.client.post(
+            "/api/v1/product-images/",
+            {"product": self.product.id, "image": make_test_image(), "alt_text": "Discus"},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_non_staff_cannot_create_product_image(self):
+        user = User.objects.create_user(username="pi-customer", password="pw12345")
+        self.client.force_authenticate(user=user)
+        response = self.client.post(
+            "/api/v1/product-images/",
+            {"product": self.product.id, "image": make_test_image(), "alt_text": "Discus"},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_can_list_product_images(self):
+        staff = User.objects.create_user(username="pi-staff-list", password="pw12345", is_staff=True)
+        self.client.force_authenticate(user=staff)
+        ProductImage.objects.create(product=self.product, image="products/discus.jpg", alt_text="Discus")
+
+        response = self.client.get("/api/v1/product-images/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+
+    def test_staff_can_create_product_image(self):
+        staff = User.objects.create_user(username="pi-staff-create", password="pw12345", is_staff=True)
+        self.client.force_authenticate(user=staff)
+
+        response = self.client.post(
+            "/api/v1/product-images/",
+            {"product": self.product.id, "image": make_test_image(), "alt_text": "Discus"},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(
+            ProductImage.objects.filter(product=self.product, alt_text="Discus").exists()
+        )

@@ -43,9 +43,14 @@ class BlogPostViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class VideoViewSet(viewsets.ModelViewSet):
-    queryset = Video.objects.filter(is_active=True)
     serializer_class = VideoSerializer
     permission_classes = [IsStaffOrReadOnly]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user and user.is_staff:
+            return Video.objects.all()
+        return Video.objects.filter(is_active=True)
 
 
 class ProductImageViewSet(viewsets.ModelViewSet):
