@@ -28,18 +28,15 @@ class Command(BaseCommand):
                       "description": "Ultra-clear 60cm rimless glass tank."},
         )
 
-        PortfolioItem.objects.get_or_create(
-            title="Living Room Reef Tank", defaults={"description": "A 4ft custom reef build.", "order": 1}
-        )
+        if not PortfolioItem.objects.filter(title="Living Room Reef Tank").exists():
+            PortfolioItem.objects.create(title="Living Room Reef Tank", description="A 4ft custom reef build.", order=1)
 
         BlogPost.objects.get_or_create(
             slug="how-to-cycle-a-new-tank",
             defaults={"title": "How to Cycle a New Tank", "body": "A new aquarium needs 2-4 weeks to cycle before adding fish..."},
         )
 
-        Video.objects.get_or_create(
-            youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            defaults={"title": "FNB Aqua Studio Tour", "order": 1},
-        )
+        if not Video.objects.filter(youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ").exists():
+            Video.objects.create(youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ", title="FNB Aqua Studio Tour", order=1)
 
         self.stdout.write(self.style.SUCCESS("Seed data created."))
