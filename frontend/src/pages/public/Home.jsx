@@ -58,12 +58,20 @@ export default function Home() {
 
   return (
     <div>
-      <section className="bg-brand-dark text-white px-4 py-16 text-center">
-        <h1 className="text-3xl sm:text-5xl font-bold mb-4">FNB Aquatic Studio</h1>
-        <p className="max-w-xl mx-auto mb-6">Custom aquariums, aquascaping, and exotic aquatic livestock in Chennai.</p>
-        <Link to="/custom-tank-build" className="bg-brand-aqua text-brand-dark px-6 py-3 rounded font-semibold">
-          Build Your Tank
-        </Link>
+      <section className="relative px-4 py-16 text-center overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/aquascaping_underwater.jpg')" }}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-black/70" aria-hidden="true" />
+        <div className="relative z-10 text-white">
+          <h1 className="text-3xl sm:text-5xl font-bold mb-4">FNB Aquatic Studio</h1>
+          <p className="max-w-xl mx-auto mb-6">Custom aquariums, aquascaping, and exotic aquatic livestock in Chennai.</p>
+          <Link to="/custom-tank-build" className="bg-brand-aqua text-brand-dark px-6 py-3 rounded font-semibold">
+            Build Your Tank
+          </Link>
+        </div>
       </section>
 
       <section className="px-4 py-12 bg-gray-50">
