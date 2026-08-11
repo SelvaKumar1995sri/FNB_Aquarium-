@@ -44,7 +44,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Video
-        fields = ["id", "title", "youtube_url", "video_id", "thumbnail_url", "order", "is_active"]
+        fields = ["id", "title", "youtube_url", "video_id", "thumbnail", "thumbnail_url", "order", "is_active"]
 
     def get_thumbnail_url(self, obj):
         if obj.thumbnail:
