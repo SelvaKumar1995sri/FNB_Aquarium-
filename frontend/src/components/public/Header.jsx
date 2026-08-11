@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 
 const NAV_LINKS = [
   { to: "/fish", label: "Fish" },
@@ -9,6 +9,15 @@ const NAV_LINKS = [
   { to: "/portfolio", label: "Portfolio" },
   { to: "/blog", label: "Blog" },
 ];
+
+function SearchIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+      <line x1="15.5" y1="15.5" x2="20" y2="20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,22 +34,37 @@ export default function Header() {
   return (
     <>
       <header className="bg-brand-dark text-white sticky top-0 z-40">
-        <div className="flex items-center justify-between px-4 py-3">
-          <NavLink to="/" className="flex items-center gap-2">
+        <div className="grid grid-cols-3 items-center px-4 py-3">
+          <div className="flex items-center">
+            <button
+              type="button"
+              className="p-2"
+              aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={isOpen}
+              aria-controls="main-sidebar-nav"
+              onClick={() => setIsOpen((open) => !open)}
+            >
+              <span className="block w-6 h-0.5 bg-white mb-1" />
+              <span className="block w-6 h-0.5 bg-white mb-1" />
+              <span className="block w-6 h-0.5 bg-white" />
+            </button>
+          </div>
+
+          <NavLink to="/" className="flex items-center justify-center">
             <img src="/logo.png" alt="FNB Aquatic Studio" className="h-10 w-auto" />
           </NavLink>
-          <button
-            type="button"
-            className="p-2"
-            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
-            aria-expanded={isOpen}
-            aria-controls="main-sidebar-nav"
-            onClick={() => setIsOpen((open) => !open)}
-          >
-            <span className="block w-6 h-0.5 bg-white mb-1" />
-            <span className="block w-6 h-0.5 bg-white mb-1" />
-            <span className="block w-6 h-0.5 bg-white" />
-          </button>
+
+          <div className="flex items-center justify-end gap-3">
+            <Link to="/search" aria-label="Search" className="p-2 hover:text-brand-aqua">
+              <SearchIcon className="h-5 w-5" />
+            </Link>
+            <Link
+              to="/admin/login"
+              className="text-sm px-3 py-1.5 border border-white/30 rounded hover:border-brand-aqua hover:text-brand-aqua transition-colors"
+            >
+              Admin Login
+            </Link>
+          </div>
         </div>
       </header>
 
