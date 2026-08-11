@@ -2,16 +2,39 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
+import CategoryGrid from "../../components/public/CategoryGrid";
 import ProductCard from "../../components/public/ProductCard";
 import VideoSlider from "../../components/public/VideoSlider";
 
 const PROCESS_STEPS = ["Consultation", "Design & Custom Build", "Installation", "Fish Adding", "Maintenance"];
 
 export default function Home() {
+  const [categories, setCategories] = useState([]);
+  const [categoriesError, setCategoriesError] = useState(false);
+  const [newArrivals, setNewArrivals] = useState([]);
+  const [newArrivalsError, setNewArrivalsError] = useState(false);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [productsError, setProductsError] = useState(false);
   const [videos, setVideos] = useState([]);
   const [videosError, setVideosError] = useState(false);
+
+  useEffect(() => {
+    setCategories([]);
+    setCategoriesError(false);
+    apiClient
+      .get("/categories/")
+      .then((response) => setCategories(response.data.results.filter((category) => !category.parent)))
+      .catch(() => setCategoriesError(true));
+  }, []);
+
+  useEffect(() => {
+    setNewArrivals([]);
+    setNewArrivalsError(false);
+    apiClient
+      .get("/products/")
+      .then((response) => setNewArrivals(response.data.results.slice(0, 8)))
+      .catch(() => setNewArrivalsError(true));
+  }, []);
 
   useEffect(() => {
     setFeaturedProducts([]);
@@ -43,7 +66,27 @@ export default function Home() {
         </Link>
       </section>
 
+      <section className="px-4 py-12 bg-gray-50">
+        <h2 className="text-2xl font-semibold mb-6 text-center">Shop by Category</h2>
+        {categoriesError && (
+          <p className="text-red-600 text-center">Couldn't load categories — please try again later.</p>
+        )}
+        <CategoryGrid categories={categories} />
+      </section>
+
       <section className="px-4 py-12">
+        <h2 className="text-2xl font-semibold mb-6">New Arrivals</h2>
+        {newArrivalsError && (
+          <p className="text-red-600">Couldn't load new arrivals — please try again later.</p>
+        )}
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {newArrivals.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      </section>
+
+      <section className="px-4 py-12 bg-gray-50">
         <h2 className="text-2xl font-semibold mb-6">Featured Products</h2>
         {productsError && (
           <p className="text-red-600">Couldn't load featured products — please try again later.</p>
@@ -55,21 +98,42 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="px-4 py-16 bg-brand-dark text-white text-center">
+        <h2 className="text-2xl sm:text-3xl font-semibold mb-4">Build Your Tank</h2>
+        <p className="max-w-xl mx-auto mb-6 text-gray-300">
+          Tell us the size and shape of the aquarium you want, and we'll get back to you with a
+          customized quote — the easiest way to design your own tank and get expert pricing based on
+          what you need.
+        </p>
+        <Link
+          to="/custom-tank-build"
+          className="bg-brand-forest hover:bg-brand-forest/90 text-white px-6 py-3 rounded font-semibold inline-block"
+        >
+          Build Your Perfect Tank
+        </Link>
+      </section>
+
       <section className="px-4 py-12">
+        <h2 className="text-2xl font-semibold mb-6 text-center">Our Process</h2>
+        <div className="flex flex-wrap justify-center gap-4">
+          {PROCESS_STEPS.map((step, index) => (
+            <div
+              key={step}
+              className="bg-white border-t-4 border-brand-aqua shadow-sm rounded-lg px-6 py-5 text-center w-40"
+            >
+              <div className="text-brand-aqua font-bold text-sm mb-1">STEP {index + 1}</div>
+              <div className="font-medium">{step}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-4 py-12 bg-gray-50">
         <h2 className="text-2xl font-semibold mb-6">Watch Us in Action</h2>
         {videosError && (
           <p className="text-red-600">Couldn't load videos — please try again later.</p>
         )}
         <VideoSlider videos={videos} />
-      </section>
-
-      <section className="px-4 py-12 bg-gray-50">
-        <h2 className="text-2xl font-semibold mb-6 text-center">Our Process</h2>
-        <div className="flex flex-wrap justify-center gap-4">
-          {PROCESS_STEPS.map((step) => (
-            <div key={step} className="bg-white border rounded-lg px-6 py-4 text-center">{step}</div>
-          ))}
-        </div>
       </section>
 
       <section className="px-4 py-12">
