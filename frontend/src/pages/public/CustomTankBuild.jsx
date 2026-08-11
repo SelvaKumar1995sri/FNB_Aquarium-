@@ -1,3 +1,4 @@
+import Breadcrumbs from "../../components/public/Breadcrumbs";
 import InquiryForm from "../../components/public/InquiryForm";
 
 const TANK_BUILD_FIELDS = [
@@ -8,13 +9,16 @@ const TANK_BUILD_FIELDS = [
 
 export default function CustomTankBuild() {
   return (
-    <div className="px-4 py-8 max-w-2xl">
-      <h1 className="text-2xl font-semibold mb-2">Build Your Tank</h1>
-      <p className="mb-6 text-gray-700">
-        Tell us the size and shape of the aquarium you want, and we'll get back to you with a
-        customized quote.
-      </p>
-      <InquiryForm type="build_tank" extraFields={TANK_BUILD_FIELDS} />
+    <div className="max-w-2xl">
+      <Breadcrumbs items={[{ label: "Custom Tank Build" }]} />
+      <div className="px-4 py-8">
+        <h1 className="text-2xl font-semibold mb-2">Build Your Tank</h1>
+        <p className="mb-6 text-gray-700">
+          Tell us the size and shape of the aquarium you want, and we'll get back to you with a
+          customized quote.
+        </p>
+        <InquiryForm type="build_tank" extraFields={TANK_BUILD_FIELDS} />
+      </div>
     </div>
   );
 }

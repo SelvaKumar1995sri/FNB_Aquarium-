@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
+import Breadcrumbs from "../../components/public/Breadcrumbs";
 import CategoryGrid from "../../components/public/CategoryGrid";
 import ProductCard from "../../components/public/ProductCard";
 
@@ -40,6 +41,24 @@ export default function CategoryProducts({ fixedSlug, title }) {
     return categories.filter((category) => category.parent === currentCategory.id);
   }, [categories, slug]);
 
+  const breadcrumbItems = useMemo(() => {
+    if (!slug) {
+      // Generic /products page: just "Home > Products".
+      return [{ label: title }];
+    }
+    const currentCategory = categories.find((category) => category.slug === slug);
+    const parentCategory = currentCategory?.parent
+      ? categories.find((category) => category.id === currentCategory.parent)
+      : null;
+    if (parentCategory) {
+      return [
+        { label: parentCategory.name, to: `/category/${parentCategory.slug}` },
+        { label: currentCategory?.name || title },
+      ];
+    }
+    return [{ label: currentCategory?.name || title }];
+  }, [categories, slug, title]);
+
   useEffect(() => {
     if (!slug) {
       setIsLoading(false);
@@ -61,27 +80,30 @@ export default function CategoryProducts({ fixedSlug, title }) {
   }, [slug]);
 
   return (
-    <div className="px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-6">{title}</h1>
-      {categoriesError && (
-        <p className="text-red-600">Couldn't load categories — please try again later.</p>
-      )}
-      {subcategories.length > 0 && (
-        <div className="mb-8">
-          <CategoryGrid categories={subcategories} />
+    <div>
+      <Breadcrumbs items={breadcrumbItems} />
+      <div className="px-4 py-8">
+        <h1 className="text-2xl font-semibold mb-6">{title}</h1>
+        {categoriesError && (
+          <p className="text-red-600">Couldn't load categories — please try again later.</p>
+        )}
+        {subcategories.length > 0 && (
+          <div className="mb-8">
+            <CategoryGrid categories={subcategories} />
+          </div>
+        )}
+        {productsError && (
+          <p className="text-red-600">Couldn't load products — please try again later.</p>
+        )}
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
         </div>
-      )}
-      {productsError && (
-        <p className="text-red-600">Couldn't load products — please try again later.</p>
-      )}
-      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+        {!isLoading && products.length === 0 && !productsError && (
+          <p className="text-gray-500">No products in this category yet.</p>
+        )}
       </div>
-      {!isLoading && products.length === 0 && !productsError && (
-        <p className="text-gray-500">No products in this category yet.</p>
-      )}
     </div>
   );
 }
