@@ -9,7 +9,11 @@ export default function CategoryGrid({ categories }) {
           to={`/category/${category.slug}`}
           className="border rounded-lg p-4 text-center hover:shadow-md transition"
         >
-          {category.image && <img src={category.image} alt={category.name} className="w-full h-28 object-cover rounded mb-2" />}
+          {category.image && (
+            <div className="w-full aspect-square overflow-hidden rounded mb-2">
+              <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
+            </div>
+          )}
           <span className="font-medium">{category.name}</span>
         </Link>
       ))}
