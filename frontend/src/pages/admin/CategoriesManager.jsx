@@ -8,6 +8,7 @@ export default function CategoriesManager() {
   const [categoriesError, setCategoriesError] = useState(false);
   const [form, setForm] = useState({ name: "", slug: "", parent: "" });
   const [imageFile, setImageFile] = useState(null);
+  const [bannerImageFile, setBannerImageFile] = useState(null);
   const [editingSlug, setEditingSlug] = useState(null);
   const [formError, setFormError] = useState("");
 
@@ -27,6 +28,7 @@ export default function CategoriesManager() {
   const resetForm = () => {
     setForm({ name: "", slug: "", parent: "" });
     setImageFile(null);
+    setBannerImageFile(null);
     setEditingSlug(null);
     setFormError("");
   };
@@ -38,6 +40,7 @@ export default function CategoriesManager() {
       parent: category.parent ? String(category.parent) : "",
     });
     setImageFile(null);
+    setBannerImageFile(null);
     setEditingSlug(category.slug);
     setFormError("");
   };
@@ -49,6 +52,7 @@ export default function CategoriesManager() {
     body.append("slug", form.slug);
     if (form.parent) body.append("parent", form.parent);
     if (imageFile) body.append("image", imageFile);
+    if (bannerImageFile) body.append("banner_image", bannerImageFile);
 
     try {
       if (editingSlug) {
@@ -106,12 +110,24 @@ export default function CategoriesManager() {
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
         </select>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setImageFile(e.target.files[0] || null)}
-          className="border rounded px-3 py-2"
-        />
+        <label className="flex flex-col text-sm text-gray-600">
+          Image (grid tile thumbnail)
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImageFile(e.target.files[0] || null)}
+            className="border rounded px-3 py-2"
+          />
+        </label>
+        <label className="flex flex-col text-sm text-gray-600">
+          Banner image (shown on the category&apos;s own page)
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setBannerImageFile(e.target.files[0] || null)}
+            className="border rounded px-3 py-2"
+          />
+        </label>
         <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">
           {editingSlug ? "Save Changes" : "Add"}
         </button>

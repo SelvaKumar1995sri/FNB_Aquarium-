@@ -6,7 +6,7 @@ from .models import BlogPost, Category, PortfolioItem, Product, ProductImage, Vi
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ["id", "name", "slug", "parent", "image", "description", "order"]
+        fields = ["id", "name", "slug", "parent", "image", "banner_image", "description", "order"]
 
 
 class ProductImageSerializer(serializers.ModelSerializer):

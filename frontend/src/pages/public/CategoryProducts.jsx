@@ -28,6 +28,11 @@ export default function CategoryProducts({ fixedSlug, title }) {
       .catch(() => setCategoriesError(true));
   }, []);
 
+  const currentCategory = useMemo(() => {
+    if (!slug) return null;
+    return categories.find((category) => category.slug === slug) || null;
+  }, [categories, slug]);
+
   const subcategories = useMemo(() => {
     if (!slug) {
       // Generic /products page: show top-level categories other than
@@ -83,6 +88,15 @@ export default function CategoryProducts({ fixedSlug, title }) {
     <div>
       <Breadcrumbs items={breadcrumbItems} />
       <div className="px-4 py-8">
+        {currentCategory?.banner_image && (
+          <div className="w-full aspect-[16/5] overflow-hidden rounded-lg mb-6">
+            <img
+              src={currentCategory.banner_image}
+              alt={currentCategory.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
         <h1 className="text-2xl font-semibold mb-6">{title}</h1>
         {categoriesError && (
           <p className="text-red-600">Couldn't load categories — please try again later.</p>

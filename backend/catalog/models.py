@@ -10,6 +10,7 @@ class Category(models.Model):
         "self", null=True, blank=True, related_name="children", on_delete=models.CASCADE
     )
     image = models.ImageField(upload_to="categories/", null=True, blank=True)
+    banner_image = models.ImageField(upload_to="categories/banners/", null=True, blank=True)
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=0)
 
