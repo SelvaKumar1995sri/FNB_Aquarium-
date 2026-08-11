@@ -6,7 +6,64 @@ import CategoryGrid from "../../components/public/CategoryGrid";
 import ProductCard from "../../components/public/ProductCard";
 import VideoSlider from "../../components/public/VideoSlider";
 
-const PROCESS_STEPS = ["Consultation", "Design & Custom Build", "Installation", "Fish Adding", "Maintenance"];
+const PROCESS_ICON_PROPS = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.75,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: "h-6 w-6",
+  "aria-hidden": "true",
+};
+
+const PROCESS_STEPS = [
+  {
+    label: "Consultation",
+    icon: (
+      <svg {...PROCESS_ICON_PROPS}>
+        <rect x="4" y="4.5" width="16" height="11" rx="2" />
+        <path d="M8 15.5v3.5l4-3.5" />
+      </svg>
+    ),
+  },
+  {
+    label: "Design & Custom Build",
+    icon: (
+      <svg {...PROCESS_ICON_PROPS}>
+        <path d="M4 20l1-4L16 5l3 3L8 19l-4 1Z" />
+        <path d="M14 7l3 3" />
+      </svg>
+    ),
+  },
+  {
+    label: "Installation",
+    icon: (
+      <svg {...PROCESS_ICON_PROPS}>
+        <path d="M13 5.5a3 3 0 1 0-3 3l-6 6a1.5 1.5 0 1 0 2 2l6-6a3 3 0 0 0 3-3Z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Fish Adding",
+    icon: (
+      <svg {...PROCESS_ICON_PROPS}>
+        <path d="M2 12c2-4 6-6 10-6s8 2 10 6c-2 4-6 6-10 6S4 16 2 12Z" />
+        <path d="M18 9l4 3-4 3" />
+        <circle cx="7" cy="11" r="0.6" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
+    label: "Maintenance",
+    icon: (
+      <svg {...PROCESS_ICON_PROPS}>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+      </svg>
+    ),
+  },
+];
 
 export default function Home() {
   const [categories, setCategories] = useState([]);
@@ -123,11 +180,14 @@ export default function Home() {
         <div className="flex flex-wrap justify-center gap-4">
           {PROCESS_STEPS.map((step, index) => (
             <div
-              key={step}
+              key={step.label}
               className="bg-white border-t-4 border-brand-aqua shadow-sm rounded-lg px-6 py-5 text-center w-40"
             >
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-brand-aqua/10 text-brand-aqua">
+                {step.icon}
+              </div>
               <div className="text-brand-aqua font-bold text-sm mb-1">STEP {index + 1}</div>
-              <div className="font-medium">{step}</div>
+              <div className="font-medium">{step.label}</div>
             </div>
           ))}
         </div>
