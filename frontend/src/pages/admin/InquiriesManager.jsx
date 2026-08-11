@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { apiClient } from "../../api/client";
+import { describeError } from "../../api/describeError";
 
 const STATUS_OPTIONS = ["new", "contacted", "closed"];
 
@@ -22,15 +23,6 @@ export default function InquiriesManager() {
   useEffect(() => {
     load();
   }, [statusFilter]);
-
-  const describeError = (error, fallback) => {
-    const data = error.response?.data;
-    if (data && typeof data === "object") {
-      const detail = Object.values(data).flat().filter(Boolean).join(" ");
-      if (detail) return detail;
-    }
-    return fallback;
-  };
 
   const updateStatus = async (id, status) => {
     try {
@@ -61,7 +53,9 @@ export default function InquiriesManager() {
             <div className="flex justify-between items-start">
               <div>
                 <p className="font-semibold">{inquiry.name} — {inquiry.phone}</p>
+                {inquiry.email && <p className="text-sm text-gray-600">{inquiry.email}</p>}
                 <p className="text-sm text-gray-600">{inquiry.type} · {new Date(inquiry.created_at).toLocaleString()}</p>
+                {inquiry.product_name && <p className="text-sm text-gray-600">Product: {inquiry.product_name}</p>}
               </div>
               <select value={inquiry.status} onChange={(e) => updateStatus(inquiry.id, e.target.value)} className="border rounded px-2 py-1">
                 {STATUS_OPTIONS.map((status) => (

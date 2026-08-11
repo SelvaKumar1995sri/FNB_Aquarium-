@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { apiClient } from "../../api/client";
+import { describeError } from "../../api/describeError";
 
 export default function CategoriesManager() {
   const [categories, setCategories] = useState([]);
@@ -21,15 +22,6 @@ export default function CategoriesManager() {
     load();
   }, []);
 
-  const describeError = (error, fallback) => {
-    const data = error.response?.data;
-    if (data && typeof data === "object") {
-      const detail = Object.values(data).flat().filter(Boolean).join(" ");
-      if (detail) return detail;
-    }
-    return fallback;
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
@@ -43,6 +35,9 @@ export default function CategoriesManager() {
   };
 
   const handleDelete = async (slug) => {
+    if (!window.confirm("Delete this category? This also deletes any subcategories and products under it.")) {
+      return;
+    }
     try {
       await apiClient.delete(`/categories/${slug}/`);
       setFormError("");

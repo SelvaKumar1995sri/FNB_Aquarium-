@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { apiClient } from "../../api/client";
+import { describeError } from "../../api/describeError";
 
 export default function ProductsManager() {
   const [products, setProducts] = useState([]);
@@ -30,15 +31,6 @@ export default function ProductsManager() {
       .catch(() => setCategoriesError(true));
   }, []);
 
-  const describeError = (error, fallback) => {
-    const data = error.response?.data;
-    if (data && typeof data === "object") {
-      const detail = Object.values(data).flat().filter(Boolean).join(" ");
-      if (detail) return detail;
-    }
-    return fallback;
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
@@ -52,6 +44,9 @@ export default function ProductsManager() {
   };
 
   const handleDelete = async (slug) => {
+    if (!window.confirm("Delete this product?")) {
+      return;
+    }
     try {
       await apiClient.delete(`/products/${slug}/`);
       setFormError("");

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { apiClient } from "../../api/client";
+import { describeError } from "../../api/describeError";
 
 export default function VideosManager() {
   const [videos, setVideos] = useState([]);
@@ -20,15 +21,6 @@ export default function VideosManager() {
   useEffect(() => {
     load();
   }, []);
-
-  const describeError = (error, fallback) => {
-    const data = error.response?.data;
-    if (data && typeof data === "object") {
-      const detail = Object.values(data).flat().filter(Boolean).join(" ");
-      if (detail) return detail;
-    }
-    return fallback;
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();

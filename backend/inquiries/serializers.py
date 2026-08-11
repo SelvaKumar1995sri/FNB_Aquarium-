@@ -27,10 +27,12 @@ class InquiryCreateSerializer(serializers.ModelSerializer):
 
 
 class InquiryDetailSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True, default=None)
+
     class Meta:
         model = Inquiry
         fields = [
-            "id", "name", "phone", "email", "message", "type", "product",
+            "id", "name", "phone", "email", "message", "type", "product", "product_name",
             "tank_size", "tank_shape", "budget_notes", "status", "created_at", "updated_at",
         ]
         read_only_fields = [f for f in fields if f != "status"]
