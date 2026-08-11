@@ -36,7 +36,7 @@ export default function Header() {
           <button
             type="button"
             className="p-2"
-            aria-label="Open navigation menu"
+            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={isOpen}
             aria-controls="main-sidebar-nav"
             onClick={() => setIsOpen((open) => !open)}
@@ -59,7 +59,8 @@ export default function Header() {
       <nav
         id="main-sidebar-nav"
         aria-label="Main navigation"
-        className={`fixed top-0 left-0 h-full w-64 bg-brand-dark text-white z-50 shadow-xl transform transition-transform duration-300 ${
+        inert={!isOpen}
+        className={`fixed top-0 left-0 h-full w-64 bg-brand-dark text-white z-50 shadow-xl transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
