@@ -60,9 +60,9 @@ export default function Header() {
             </Link>
             <Link
               to="/admin/login"
-              className="text-sm px-3 py-1.5 border border-white/30 rounded hover:border-brand-aqua hover:text-brand-aqua transition-colors"
+              className="whitespace-nowrap text-sm px-3 py-1.5 border border-white/30 rounded hover:border-brand-aqua hover:text-brand-aqua transition-colors"
             >
-              Admin Login
+              <span className="hidden sm:inline">Admin </span>Login
             </Link>
           </div>
         </div>
