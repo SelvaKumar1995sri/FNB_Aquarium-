@@ -77,7 +77,7 @@ export default function CategoriesManager() {
   };
 
   return (
-    <div>
+    <div className="px-4 py-8">
       <h1 className="text-xl font-semibold mb-4">Categories</h1>
       <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 mb-6">
         <input

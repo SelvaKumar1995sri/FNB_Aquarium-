@@ -125,7 +125,7 @@ export default function ProductsManager() {
   };
 
   return (
-    <div>
+    <div className="px-4 py-8">
       <h1 className="text-xl font-semibold mb-4">Products</h1>
       {categoriesError && (
         <p className="text-red-600">Couldn't load categories — please try again later.</p>

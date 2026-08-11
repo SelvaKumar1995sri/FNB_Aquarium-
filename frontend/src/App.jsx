@@ -1,7 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import AdminGuard from "./components/admin/AdminGuard";
-import AdminLayout from "./layouts/AdminLayout";
 import PublicLayout from "./layouts/PublicLayout";
 import CategoriesManager from "./pages/admin/CategoriesManager";
 import InquiriesManager from "./pages/admin/InquiriesManager";
@@ -40,18 +39,16 @@ export default function App() {
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/policies/:slug" element={<StaticPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-        <Route path="/admin/login" element={<Login />} />
-        <Route path="/admin" element={<AdminGuard />}>
-          <Route element={<AdminLayout />}>
+          <Route path="/admin" element={<AdminGuard />}>
             <Route index element={<Navigate to="/admin/categories" replace />} />
             <Route path="categories" element={<CategoriesManager />} />
             <Route path="products" element={<ProductsManager />} />
             <Route path="videos" element={<VideosManager />} />
             <Route path="inquiries" element={<InquiriesManager />} />
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Route>
+        <Route path="/admin/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
   );

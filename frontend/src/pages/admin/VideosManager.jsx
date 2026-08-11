@@ -76,7 +76,7 @@ export default function VideosManager() {
   };
 
   return (
-    <div>
+    <div className="px-4 py-8">
       <h1 className="text-xl font-semibold mb-4">Videos</h1>
       <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 mb-6 items-center">
         <input

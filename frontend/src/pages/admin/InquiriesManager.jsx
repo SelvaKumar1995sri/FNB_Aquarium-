@@ -35,7 +35,7 @@ export default function InquiriesManager() {
   };
 
   return (
-    <div>
+    <div className="px-4 py-8">
       <h1 className="text-xl font-semibold mb-4">Inquiries</h1>
       <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded px-3 py-2 mb-4">
         <option value="">All statuses</option>
