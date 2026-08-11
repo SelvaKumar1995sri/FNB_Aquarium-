@@ -1,3 +1,5 @@
+from django.db.models import Q
+
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAdminUser
 
@@ -10,10 +12,16 @@ from .serializers import (
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsStaffOrReadOnly]
     lookup_field = "slug"
+
+    def get_queryset(self):
+        queryset = Category.objects.all()
+        search = self.request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        return queryset
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -29,6 +37,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         is_featured = self.request.query_params.get("is_featured")
         if is_featured is not None:
             queryset = queryset.filter(is_featured=is_featured.lower() in ("true", "1"))
+        search = self.request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
         return queryset
 
 

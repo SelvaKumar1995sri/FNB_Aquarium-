@@ -17,6 +17,7 @@ import Home from "./pages/public/Home";
 import NotFound from "./pages/public/NotFound";
 import Portfolio from "./pages/public/Portfolio";
 import ProductDetail from "./pages/public/ProductDetail";
+import SearchResults from "./pages/public/SearchResults";
 import Services from "./pages/public/Services";
 import StaticPage from "./pages/public/StaticPage";
 
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/products" element={<CategoryProducts title="Products" />} />
           <Route path="/category/:slug" element={<CategoryProducts title="Category" />} />
           <Route path="/product/:slug" element={<ProductDetail />} />
+          <Route path="/search" element={<SearchResults />} />
           <Route path="/custom-tank-build" element={<CustomTankBuild />} />
           <Route path="/services" element={<Services />} />
           <Route path="/about" element={<About />} />

@@ -36,6 +36,35 @@ class CategoryListViewTests(APITestCase):
         self.assertEqual(data["name"], "Fish")
         self.assertEqual(data["description"], "Freshwater fish")
 
+    def test_search_categories_by_name(self):
+        Category.objects.create(name="Fish", slug="fish")
+        Category.objects.create(name="Plants", slug="plants")
+
+        response = self.client.get("/api/v1/categories/", {"search": "fish"})
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()["results"]
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["slug"], "fish")
+
+    def test_search_categories_is_case_insensitive(self):
+        Category.objects.create(name="Fish", slug="fish")
+
+        response = self.client.get("/api/v1/categories/", {"search": "FISH"})
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()["results"]
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["slug"], "fish")
+
+    def test_search_categories_with_no_match_returns_empty(self):
+        Category.objects.create(name="Fish", slug="fish")
+
+        response = self.client.get("/api/v1/categories/", {"search": "reptiles"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["results"], [])
+
     def test_write_methods_are_rejected_for_anonymous_users(self):
         # Categories are now a staff-only write API (see CategoryWritePermissionTests
         # below) — anonymous writes are blocked by permissions (401), not routing (405).
@@ -83,6 +112,53 @@ class ProductListViewTests(APITestCase):
         results = response.json()["results"]
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["slug"], "discus")
+
+    def test_search_products_by_name(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        Product.objects.create(name="Discus", slug="discus", category=fish, price=1200)
+        Product.objects.create(name="Anubias", slug="anubias", category=fish, price=300)
+
+        response = self.client.get("/api/v1/products/", {"search": "disc"})
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()["results"]
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["slug"], "discus")
+
+    def test_search_products_by_description(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        Product.objects.create(
+            name="Discus", slug="discus", category=fish, price=1200,
+            description="A colorful freshwater tank favorite",
+        )
+        Product.objects.create(name="Anubias", slug="anubias", category=fish, price=300, description="A hardy plant")
+
+        response = self.client.get("/api/v1/products/", {"search": "tank"})
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()["results"]
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["slug"], "discus")
+
+    def test_search_products_is_case_insensitive(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        Product.objects.create(name="Discus", slug="discus", category=fish, price=1200)
+
+        response = self.client.get("/api/v1/products/", {"search": "DISCUS"})
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()["results"]
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["slug"], "discus")
+
+    def test_search_products_with_no_match_returns_empty(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        Product.objects.create(name="Discus", slug="discus", category=fish, price=1200)
+
+        response = self.client.get("/api/v1/products/", {"search": "nonexistentterm"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["results"], [])
 
     def test_retrieve_product_by_slug_includes_nested_images(self):
         fish = Category.objects.create(name="Fish", slug="fish")
