@@ -2,16 +2,12 @@ import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 
 const NAV_LINKS = [
-  { to: "/", label: "Home" },
   { to: "/fish", label: "Fish" },
   { to: "/plants", label: "Plants" },
   { to: "/products", label: "Products" },
-  { to: "/custom-tank-build", label: "Custom Tank Build" },
   { to: "/services", label: "Services" },
   { to: "/portfolio", label: "Portfolio" },
   { to: "/blog", label: "Blog" },
-  { to: "/about", label: "About Us" },
-  { to: "/contact", label: "Contact Us" },
 ];
 
 export default function Header() {

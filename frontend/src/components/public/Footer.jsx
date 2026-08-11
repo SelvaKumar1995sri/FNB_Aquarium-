@@ -93,15 +93,6 @@ export default function Footer() {
           <h3 className="font-semibold mb-2">Visit Us</h3>
           <p>{SHOP_INFO.address}</p>
           <p className="mt-2">Phone: {SHOP_INFO.phone}</p>
-          <ul className="mt-3">
-            {SHOP_INFO.hoursByDay.map(([day, time]) => (
-              <li key={day} className="flex justify-between max-w-xs">
-                <span>{day}</span>
-                <span>{time}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-brand-aqua text-sm mt-1">{SHOP_INFO.holidayNote}</p>
           <ul className="grid gap-1 mt-4">
             {POLICY_LINKS.map(({ label, to }) => (
               <li key={to}><Link to={to}>{label}</Link></li>
