@@ -43,7 +43,7 @@ export default function Login() {
           className="border rounded px-3 py-2"
         />
         {error && <p className="text-red-600 text-sm">{error}</p>}
-        <button type="submit" className="bg-brand-dark text-white rounded px-4 py-2">Log in</button>
+        <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">Log in</button>
       </form>
     </div>
   );

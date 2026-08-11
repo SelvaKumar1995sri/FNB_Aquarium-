@@ -38,7 +38,7 @@ export default function Home() {
       <section className="bg-brand-dark text-white px-4 py-16 text-center">
         <h1 className="text-3xl sm:text-5xl font-bold mb-4">FNB Aquatic Studio</h1>
         <p className="max-w-xl mx-auto mb-6">Custom aquariums, aquascaping, and exotic aquatic livestock in Chennai.</p>
-        <Link to="/custom-tank-build" className="bg-yellow-400 text-brand-dark px-6 py-3 rounded font-semibold">
+        <Link to="/custom-tank-build" className="bg-brand-aqua text-brand-dark px-6 py-3 rounded font-semibold">
           Build Your Tank
         </Link>
       </section>

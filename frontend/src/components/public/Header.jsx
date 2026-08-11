@@ -34,7 +34,7 @@ export default function Header() {
         </button>
         <nav className="hidden md:flex gap-4 lg:gap-6">
           {NAV_LINKS.map((link) => (
-            <NavLink key={link.to} to={link.to} className="hover:text-yellow-400 md:text-sm lg:text-base">
+            <NavLink key={link.to} to={link.to} className="hover:text-brand-aqua md:text-sm lg:text-base">
               {link.label}
             </NavLink>
           ))}
@@ -43,7 +43,7 @@ export default function Header() {
       {isOpen && (
         <nav className="md:hidden flex flex-col gap-3 px-4 pb-4">
           {NAV_LINKS.map((link) => (
-            <NavLink key={link.to} to={link.to} onClick={() => setIsOpen(false)} className="hover:text-yellow-400">
+            <NavLink key={link.to} to={link.to} onClick={() => setIsOpen(false)} className="hover:text-brand-aqua">
               {link.label}
             </NavLink>
           ))}

@@ -16,11 +16,11 @@ export default function AdminLayout() {
     <div className="min-h-screen flex flex-col md:flex-row">
       <nav className="bg-brand-dark text-white flex md:flex-col gap-2 p-4 md:w-56">
         {LINKS.map((link) => (
-          <NavLink key={link.to} to={link.to} className="hover:text-yellow-400">
+          <NavLink key={link.to} to={link.to} className="hover:text-brand-aqua">
             {link.label}
           </NavLink>
         ))}
-        <button onClick={logout} className="mt-auto text-left hover:text-yellow-400">Log out</button>
+        <button onClick={logout} className="mt-auto text-left hover:text-brand-aqua">Log out</button>
       </nav>
       <main className="flex-1 p-6">
         <Outlet />

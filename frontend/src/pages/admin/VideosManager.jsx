@@ -58,7 +58,7 @@ export default function VideosManager() {
       <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 mb-6">
         <input required placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="border rounded px-3 py-2" />
         <input required placeholder="YouTube URL" value={form.youtube_url} onChange={(e) => setForm({ ...form, youtube_url: e.target.value })} className="border rounded px-3 py-2 flex-1" />
-        <button type="submit" className="bg-brand-dark text-white rounded px-4 py-2">Add</button>
+        <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">Add</button>
       </form>
       {formError && <p className="text-red-600 mb-4">{formError}</p>}
       {videosError && (

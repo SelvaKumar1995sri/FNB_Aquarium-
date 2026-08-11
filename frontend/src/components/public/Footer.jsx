@@ -22,7 +22,7 @@ export default function Footer() {
               </li>
             ))}
           </ul>
-          <p className="text-yellow-400 text-sm mt-1">{SHOP_INFO.holidayNote}</p>
+          <p className="text-brand-aqua text-sm mt-1">{SHOP_INFO.holidayNote}</p>
         </div>
         <div>
           <h3 className="font-semibold mb-2">FNB Aquatic Studio</h3>

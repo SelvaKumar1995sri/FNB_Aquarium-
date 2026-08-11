@@ -70,7 +70,7 @@ export default function CategoriesManager() {
           onChange={(e) => setForm({ ...form, slug: e.target.value })}
           className="border rounded px-3 py-2"
         />
-        <button type="submit" className="bg-brand-dark text-white rounded px-4 py-2">Add</button>
+        <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">Add</button>
       </form>
       {formError && <p className="text-red-600 mb-4">{formError}</p>}
       {categoriesError && (

@@ -78,7 +78,7 @@ export default function ProductsManager() {
         </select>
         <input required type="number" placeholder="Price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="border rounded px-3 py-2" />
         <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="border rounded px-3 py-2" />
-        <button type="submit" className="bg-brand-dark text-white rounded px-4 py-2">Add Product</button>
+        <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">Add Product</button>
       </form>
       {formError && <p className="text-red-600 mb-4">{formError}</p>}
       {productsError && (
