@@ -49,13 +49,14 @@ class CategoryListViewTests(APITestCase):
 
     def test_search_categories_is_case_insensitive(self):
         Category.objects.create(name="Fish", slug="fish")
+        Category.objects.create(name="Plants", slug="plants")
 
         response = self.client.get("/api/v1/categories/", {"search": "FISH"})
 
         self.assertEqual(response.status_code, 200)
         results = response.json()["results"]
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["slug"], "fish")
+        slugs = {result["slug"] for result in results}
+        self.assertEqual(slugs, {"fish"})
 
     def test_search_categories_with_no_match_returns_empty(self):
         Category.objects.create(name="Fish", slug="fish")
@@ -142,14 +143,15 @@ class ProductListViewTests(APITestCase):
 
     def test_search_products_is_case_insensitive(self):
         fish = Category.objects.create(name="Fish", slug="fish")
-        Product.objects.create(name="Discus", slug="discus", category=fish, price=1200)
+        Product.objects.create(name="tiny tank", slug="tiny-tank", category=fish, price=500)
+        Product.objects.create(name="Discus Fish", slug="discus-fish", category=fish, price=1200)
 
-        response = self.client.get("/api/v1/products/", {"search": "DISCUS"})
+        response = self.client.get("/api/v1/products/", {"search": "TINY"})
 
         self.assertEqual(response.status_code, 200)
         results = response.json()["results"]
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["slug"], "discus")
+        slugs = {result["slug"] for result in results}
+        self.assertEqual(slugs, {"tiny-tank"})
 
     def test_search_products_with_no_match_returns_empty(self):
         fish = Category.objects.create(name="Fish", slug="fish")

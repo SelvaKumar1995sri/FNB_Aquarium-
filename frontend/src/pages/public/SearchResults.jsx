@@ -10,7 +10,7 @@ export default function SearchResults() {
   const [inputValue, setInputValue] = useState(query);
   const [products, setProducts] = useState([]);
   const [productsError, setProductsError] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(Boolean(query));
 
   useEffect(() => {
     setInputValue(query);
