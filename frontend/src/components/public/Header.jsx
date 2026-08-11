@@ -21,7 +21,7 @@ export default function Header() {
     <header className="bg-brand-dark text-white sticky top-0 z-50">
       <div className="flex items-center justify-between px-4 py-3">
         <NavLink to="/" className="flex items-center gap-2 shrink-0">
-          <img src="/logo.svg" alt="FNB Aquatic Studio" className="h-10 w-auto" />
+          <img src="/logo.png" alt="FNB Aquatic Studio" className="h-10 w-auto" />
         </NavLink>
         <button
           className="md:hidden p-2"
