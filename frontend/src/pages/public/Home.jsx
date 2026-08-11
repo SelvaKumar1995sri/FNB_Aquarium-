@@ -68,9 +68,6 @@ export default function Home() {
         <div className="relative z-10 text-white">
           <h1 className="text-3xl sm:text-5xl font-bold mb-4">FNB Aquatic Studio</h1>
           <p className="max-w-xl mx-auto mb-6">Custom aquariums, aquascaping, and exotic aquatic livestock in Chennai.</p>
-          <Link to="/custom-tank-build" className="bg-brand-aqua text-brand-dark px-6 py-3 rounded font-semibold">
-            Build Your Tank
-          </Link>
         </div>
       </section>
 
@@ -87,7 +84,7 @@ export default function Home() {
         {newArrivalsError && (
           <p className="text-red-600">Couldn't load new arrivals — please try again later.</p>
         )}
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-6 grid-cols-3 lg:grid-cols-4">
           {newArrivals.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -99,7 +96,7 @@ export default function Home() {
         {productsError && (
           <p className="text-red-600">Couldn't load featured products — please try again later.</p>
         )}
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-6 grid-cols-3 lg:grid-cols-4">
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

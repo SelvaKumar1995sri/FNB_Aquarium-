@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export default function CategoryGrid({ categories }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <div className="grid gap-4 grid-cols-3 lg:grid-cols-4">
       {categories.map((category) => (
         <Link
           key={category.id}
