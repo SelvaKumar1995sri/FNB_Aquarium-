@@ -10,14 +10,14 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  if (isAuthenticated) return <Navigate to="/admin" replace />;
+  if (isAuthenticated) return <Navigate to="/" replace />;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
     try {
       await login(username, password);
-      navigate("/admin");
+      navigate("/");
     } catch {
       setError("Invalid username or password.");
     }
