@@ -58,8 +58,16 @@ const PROCESS_STEPS = [
     label: "Maintenance",
     icon: (
       <svg {...PROCESS_ICON_PROPS}>
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+        <circle cx="12" cy="12" r="5.5" />
+        <circle cx="12" cy="12" r="2" />
+        <rect x="10.8" y="4" width="2.4" height="2.5" />
+        <rect x="10.8" y="4" width="2.4" height="2.5" transform="rotate(45 12 12)" />
+        <rect x="10.8" y="4" width="2.4" height="2.5" transform="rotate(90 12 12)" />
+        <rect x="10.8" y="4" width="2.4" height="2.5" transform="rotate(135 12 12)" />
+        <rect x="10.8" y="4" width="2.4" height="2.5" transform="rotate(180 12 12)" />
+        <rect x="10.8" y="4" width="2.4" height="2.5" transform="rotate(225 12 12)" />
+        <rect x="10.8" y="4" width="2.4" height="2.5" transform="rotate(270 12 12)" />
+        <rect x="10.8" y="4" width="2.4" height="2.5" transform="rotate(315 12 12)" />
       </svg>
     ),
   },
