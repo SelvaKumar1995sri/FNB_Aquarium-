@@ -89,7 +89,7 @@ export default function CategoryProducts({ fixedSlug, title }) {
       <Breadcrumbs items={breadcrumbItems} />
       <div className="px-4 py-8">
         {currentCategory?.banner_image && (
-          <div className="w-full aspect-[16/4] max-h-64 sm:max-h-72 lg:max-h-80 overflow-hidden rounded-lg mb-6">
+          <div className="w-full aspect-[16/3.4] max-h-[218px] sm:max-h-[245px] lg:max-h-[272px] overflow-hidden rounded-lg mb-6">
             <img
               src={currentCategory.banner_image}
               alt={currentCategory.name}
