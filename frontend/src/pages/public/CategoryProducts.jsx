@@ -99,9 +99,14 @@ export default function CategoryProducts({ fixedSlug, title }) {
               className="absolute inset-0 bg-gradient-to-l from-black/60 via-black/10 to-transparent"
               aria-hidden="true"
             />
-            <span className="absolute inset-y-0 right-0 flex items-center pr-6 sm:pr-10 text-white text-2xl sm:text-4xl font-bold drop-shadow-lg">
-              {currentCategory.name}
-            </span>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-10 sm:pr-16 lg:pr-20">
+              <div className="text-right">
+                <span className="text-white text-2xl sm:text-4xl font-bold tracking-wide drop-shadow-lg">
+                  {currentCategory.name}
+                </span>
+                <div className="mt-2 h-1 w-16 sm:w-24 bg-brand-aqua rounded-full ml-auto" />
+              </div>
+            </div>
           </div>
         )}
         <h1 className="text-2xl font-semibold mb-6">{currentCategory?.name || title}</h1>
