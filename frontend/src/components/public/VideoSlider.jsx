@@ -21,14 +21,16 @@ export default function VideoSlider({ videos }) {
   const prev = () => goTo(activeIndex - 1);
 
   const handlePointerDown = (event) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
     dragState.current = { startX: event.clientX, dragging: true, moved: false };
   };
 
   const handlePointerMove = (event) => {
     if (!dragState.current.dragging) return;
     const delta = event.clientX - dragState.current.startX;
-    if (Math.abs(delta) > MOVE_THRESHOLD) dragState.current.moved = true;
+    if (!dragState.current.moved && Math.abs(delta) > MOVE_THRESHOLD) {
+      dragState.current.moved = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
   };
 
   const handlePointerUp = (event) => {
@@ -48,17 +50,26 @@ export default function VideoSlider({ videos }) {
     >
       {displayOrder.map(({ video, sourceIndex, position }) => {
         const isActive = position === middle;
+
+        const handleInactiveClick = () => {
+          if (dragState.current.moved) {
+            dragState.current.moved = false;
+            return;
+          }
+          goTo(sourceIndex);
+        };
+
+        const handleActiveClick = (event) => {
+          if (dragState.current.moved) {
+            event.preventDefault();
+            dragState.current.moved = false;
+          }
+        };
+
         return (
           <div
             key={video.id}
-            onClick={() => {
-              if (dragState.current.moved) {
-                dragState.current.moved = false;
-                return;
-              }
-              goTo(sourceIndex);
-            }}
-            className={`relative flex-shrink-0 rounded-lg overflow-hidden cursor-pointer transition-all duration-500 ease-in-out ${
+            className={`relative flex-shrink-0 rounded-lg overflow-hidden transition-all duration-500 ease-in-out ${
               isActive ? "w-56 sm:w-72" : "w-10 sm:w-14"
             }`}
           >
@@ -71,29 +82,29 @@ export default function VideoSlider({ videos }) {
             <div className={`absolute inset-0 transition-colors duration-500 ${isActive ? "bg-black/30" : "bg-black/55"}`} />
 
             {isActive ? (
-              <>
-                <a
-                  href={video.youtube_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(event) => event.stopPropagation()}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  <span className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center text-brand-dark text-xl">
-                    ▶
-                  </span>
-                </a>
+              <a
+                href={video.youtube_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleActiveClick}
+                className="absolute inset-0 flex items-center justify-center cursor-pointer"
+              >
+                <span className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center text-brand-dark text-xl">
+                  ▶
+                </span>
                 <span className="absolute bottom-3 left-3 right-3 text-white font-semibold text-sm truncate">
                   {video.title}
                 </span>
-              </>
+              </a>
             ) : (
-              <span
-                className="absolute inset-0 flex items-center justify-center text-white font-bold text-xs tracking-widest whitespace-nowrap"
+              <button
+                type="button"
+                onClick={handleInactiveClick}
+                className="absolute inset-0 flex items-center justify-center text-white font-bold text-xs tracking-widest whitespace-nowrap bg-transparent border-0 cursor-pointer"
                 style={{ writingMode: "vertical-rl" }}
               >
                 {video.title}
-              </span>
+              </button>
             )}
           </div>
         );
