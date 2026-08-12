@@ -95,17 +95,11 @@ export default function CategoryProducts({ fixedSlug, title }) {
               alt={currentCategory.name}
               className="w-full h-full object-cover"
             />
-            <div
-              className="absolute inset-0 bg-gradient-to-l from-black/60 via-black/10 to-transparent"
-              aria-hidden="true"
-            />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-10 sm:pr-16 lg:pr-20">
-              <div className="text-right">
-                <span className="text-white text-2xl sm:text-4xl font-bold tracking-wide drop-shadow-lg">
-                  {currentCategory.name}
-                </span>
-                <div className="mt-2 h-1 w-16 sm:w-24 bg-brand-aqua rounded-full ml-auto" />
-              </div>
+            <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-white text-2xl sm:text-4xl font-bold tracking-wide drop-shadow-lg">
+                {currentCategory.name}
+              </span>
             </div>
           </div>
         )}
