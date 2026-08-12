@@ -84,19 +84,27 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="px-4 py-16 bg-brand-dark text-white text-center">
-        <h2 className="text-2xl sm:text-3xl font-semibold mb-4">Build Your Tank</h2>
-        <p className="max-w-xl mx-auto mb-6 text-gray-300">
-          Tell us the size and shape of the aquarium you want, and we'll get back to you with a
-          customized quote — the easiest way to design your own tank and get expert pricing based on
-          what you need.
-        </p>
-        <Link
-          to="/custom-tank-build"
-          className="bg-brand-forest hover:bg-brand-forest/90 text-white px-6 py-3 rounded font-semibold inline-block"
-        >
-          Build Your Perfect Tank
-        </Link>
+      <section className="relative px-4 py-16 text-center overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/zoosnow-aquarium-5320392.jpg')" }}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
+        <div className="relative z-10 text-white">
+          <h2 className="text-2xl sm:text-3xl font-semibold mb-4">Build Your Tank</h2>
+          <p className="max-w-xl mx-auto mb-6 text-gray-300">
+            Tell us the size and shape of the aquarium you want, and we'll get back to you with a
+            customized quote — the easiest way to design your own tank and get expert pricing based on
+            what you need.
+          </p>
+          <Link
+            to="/custom-tank-build"
+            className="bg-brand-forest hover:bg-brand-forest/90 text-white px-6 py-3 rounded font-semibold inline-block"
+          >
+            Build Your Perfect Tank
+          </Link>
+        </div>
       </section>
 
       <section className="px-4 py-12">
