@@ -132,14 +132,6 @@ export default function Home() {
         )}
         <VideoSlider videos={videos} />
       </section>
-
-      <section className="px-4 py-12">
-        <h2 className="text-2xl font-semibold mb-4">About FNB Aquatic Studio</h2>
-        <p className="max-w-2xl">
-          We design, build, and maintain custom aquariums for homes and businesses, and stock a
-          curated range of exotic fish, plants, and aquascaping equipment.
-        </p>
-      </section>
     </div>
   );
 }
