@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import AdminGuard from "./components/admin/AdminGuard";
+import ScrollToTop from "./components/ScrollToTop";
 import PublicLayout from "./layouts/PublicLayout";
 import CategoriesManager from "./pages/admin/CategoriesManager";
 import InquiriesManager from "./pages/admin/InquiriesManager";
@@ -23,6 +24,7 @@ import StaticPage from "./pages/public/StaticPage";
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
