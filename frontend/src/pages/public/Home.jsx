@@ -100,7 +100,7 @@ export default function Home() {
           </p>
           <Link
             to="/custom-tank-build"
-            className="bg-brand-forest hover:bg-brand-forest/90 text-white px-6 py-3 rounded font-semibold inline-block"
+            className="bg-brand-aqua hover:bg-brand-aqua/90 text-brand-dark px-6 py-3 rounded font-semibold inline-block"
           >
             Build Your Perfect Tank
           </Link>
