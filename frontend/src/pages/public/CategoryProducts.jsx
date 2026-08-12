@@ -97,7 +97,7 @@ export default function CategoryProducts({ fixedSlug, title }) {
             />
           </div>
         )}
-        <h1 className="text-2xl font-semibold mb-6">{title}</h1>
+        <h1 className="text-2xl font-semibold mb-6">{currentCategory?.name || title}</h1>
         {categoriesError && (
           <p className="text-red-600">Couldn't load categories — please try again later.</p>
         )}
