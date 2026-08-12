@@ -1,18 +1,63 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+
+const DRAG_THRESHOLD = 50;
+const MOVE_THRESHOLD = 10;
 
 export default function VideoSlider({ videos }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const dragState = useRef({ startX: 0, dragging: false, moved: false });
 
   if (videos.length === 0) return null;
 
+  const count = videos.length;
+  const middle = Math.floor(count / 2);
+  const displayOrder = Array.from({ length: count }, (_, position) => {
+    const sourceIndex = (activeIndex - middle + position + count * 10) % count;
+    return { video: videos[sourceIndex], sourceIndex, position };
+  });
+
+  const goTo = (index) => setActiveIndex(((index % count) + count) % count);
+  const next = () => goTo(activeIndex + 1);
+  const prev = () => goTo(activeIndex - 1);
+
+  const handlePointerDown = (event) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragState.current = { startX: event.clientX, dragging: true, moved: false };
+  };
+
+  const handlePointerMove = (event) => {
+    if (!dragState.current.dragging) return;
+    const delta = event.clientX - dragState.current.startX;
+    if (Math.abs(delta) > MOVE_THRESHOLD) dragState.current.moved = true;
+  };
+
+  const handlePointerUp = (event) => {
+    if (!dragState.current.dragging) return;
+    const delta = event.clientX - dragState.current.startX;
+    dragState.current.dragging = false;
+    if (delta <= -DRAG_THRESHOLD) next();
+    else if (delta >= DRAG_THRESHOLD) prev();
+  };
+
   return (
-    <div className="flex justify-center gap-2 h-72 sm:h-80 overflow-x-auto">
-      {videos.map((video, index) => {
-        const isActive = index === activeIndex;
+    <div
+      className="flex justify-center gap-2 h-72 sm:h-80 overflow-hidden select-none cursor-grab active:cursor-grabbing"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+    >
+      {displayOrder.map(({ video, sourceIndex, position }) => {
+        const isActive = position === middle;
         return (
           <div
             key={video.id}
-            onClick={() => setActiveIndex(index)}
+            onClick={() => {
+              if (dragState.current.moved) {
+                dragState.current.moved = false;
+                return;
+              }
+              goTo(sourceIndex);
+            }}
             className={`relative flex-shrink-0 rounded-lg overflow-hidden cursor-pointer transition-all duration-500 ease-in-out ${
               isActive ? "w-56 sm:w-72" : "w-10 sm:w-14"
             }`}
@@ -20,6 +65,7 @@ export default function VideoSlider({ videos }) {
             <img
               src={video.thumbnail_url}
               alt={video.title}
+              draggable={false}
               className="absolute inset-0 w-full h-full object-cover"
             />
             <div className={`absolute inset-0 transition-colors duration-500 ${isActive ? "bg-black/30" : "bg-black/55"}`} />
