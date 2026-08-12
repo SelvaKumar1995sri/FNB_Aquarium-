@@ -19,8 +19,6 @@ export default function Home() {
   const [categoriesError, setCategoriesError] = useState(false);
   const [newArrivals, setNewArrivals] = useState([]);
   const [newArrivalsError, setNewArrivalsError] = useState(false);
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [productsError, setProductsError] = useState(false);
   const [videos, setVideos] = useState([]);
   const [videosError, setVideosError] = useState(false);
 
@@ -40,17 +38,6 @@ export default function Home() {
       .get("/products/")
       .then((response) => setNewArrivals(response.data.results.slice(0, 8)))
       .catch(() => setNewArrivalsError(true));
-  }, []);
-
-  useEffect(() => {
-    setFeaturedProducts([]);
-    setProductsError(false);
-    apiClient
-      .get("/products/", { params: { is_featured: true } })
-      .then((response) => {
-        setFeaturedProducts(response.data.results);
-      })
-      .catch(() => setProductsError(true));
   }, []);
 
   useEffect(() => {
@@ -86,24 +73,12 @@ export default function Home() {
       </section>
 
       <section className="px-4 py-12">
-        <h2 className="text-2xl font-semibold mb-6">New Arrivals</h2>
+        <h2 className="text-2xl font-semibold mb-6 text-center">New Arrivals</h2>
         {newArrivalsError && (
           <p className="text-red-600">Couldn't load new arrivals — please try again later.</p>
         )}
-        <div className="grid gap-6 grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-6 grid-cols-4 sm:grid-cols-5 lg:grid-cols-6">
           {newArrivals.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
-
-      <section className="px-4 py-12 bg-gray-50">
-        <h2 className="text-2xl font-semibold mb-6">Featured Products</h2>
-        {productsError && (
-          <p className="text-red-600">Couldn't load featured products — please try again later.</p>
-        )}
-        <div className="grid gap-6 grid-cols-3 lg:grid-cols-4">
-          {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
@@ -130,12 +105,12 @@ export default function Home() {
           {PROCESS_STEPS.map((step, index) => (
             <div
               key={step.label}
-              className="bg-white border-t-4 border-brand-aqua shadow-sm rounded-lg px-4 py-5 text-center w-56"
+              className="bg-white border rounded-lg hover:shadow-md transition px-4 py-5 text-center w-56"
             >
               <div className="mb-3 aspect-[4/3] w-full overflow-hidden rounded">
                 <img src={step.icon} alt={step.label} className="w-full h-full object-cover" />
               </div>
-              <div className="text-brand-aqua font-bold text-sm mb-1">STEP {index + 1}</div>
+              <div className="text-sm text-gray-600 mb-1">STEP {index + 1}</div>
               <div className="font-medium">{step.label}</div>
             </div>
           ))}
