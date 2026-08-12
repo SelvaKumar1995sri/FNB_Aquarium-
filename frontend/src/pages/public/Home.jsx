@@ -125,7 +125,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="px-4 py-12 bg-gray-50">
+      <section className="px-4 py-12 bg-gray-50 text-center">
         <h2 className="text-2xl font-semibold mb-6">Watch Us in Action</h2>
         {videosError && (
           <p className="text-red-600">Couldn't load videos — please try again later.</p>
