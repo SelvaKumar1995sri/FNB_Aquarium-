@@ -89,12 +89,19 @@ export default function CategoryProducts({ fixedSlug, title }) {
       <Breadcrumbs items={breadcrumbItems} />
       <div className="px-4 py-8">
         {currentCategory?.banner_image && (
-          <div className="w-full aspect-[16/3.4] max-h-[218px] sm:max-h-[245px] lg:max-h-[272px] overflow-hidden rounded-lg mb-6">
+          <div className="relative w-full aspect-[16/3.4] max-h-[218px] sm:max-h-[245px] lg:max-h-[272px] overflow-hidden rounded-lg mb-6">
             <img
               src={currentCategory.banner_image}
               alt={currentCategory.name}
               className="w-full h-full object-cover"
             />
+            <div
+              className="absolute inset-0 bg-gradient-to-l from-black/60 via-black/10 to-transparent"
+              aria-hidden="true"
+            />
+            <span className="absolute inset-y-0 right-0 flex items-center pr-6 sm:pr-10 text-white text-2xl sm:text-4xl font-bold drop-shadow-lg">
+              {currentCategory.name}
+            </span>
           </div>
         )}
         <h1 className="text-2xl font-semibold mb-6">{currentCategory?.name || title}</h1>
