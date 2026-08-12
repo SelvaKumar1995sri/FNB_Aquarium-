@@ -57,7 +57,7 @@ export default function Home() {
           style={{ backgroundImage: "url('/aquascaping_underwater.jpg')" }}
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-black/70" aria-hidden="true" />
+        <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
         <div className="relative z-10 text-white">
           <h1 className="text-3xl sm:text-5xl font-bold mb-4">FNB Aquatic Studio</h1>
           <p className="max-w-xl mx-auto mb-6">Custom aquariums, aquascaping, and exotic aquatic livestock in Chennai.</p>
