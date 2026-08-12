@@ -45,10 +45,10 @@ describe("VideoSlider", () => {
 
   it("captures the pointer once, only after real dragging crosses the move threshold", () => {
     const root = renderSlider();
-    fireEvent.pointerDown(root, { clientX: 100, pointerId: 1 });
-    fireEvent.pointerMove(root, { clientX: 80, pointerId: 1 });
+    fireEvent.pointerDown(root, { clientX: 100, pointerId: 1, buttons: 1 });
+    fireEvent.pointerMove(root, { clientX: 80, pointerId: 1, buttons: 1 });
     expect(Element.prototype.setPointerCapture).toHaveBeenCalledTimes(1);
-    fireEvent.pointerMove(root, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(root, { clientX: 60, pointerId: 1, buttons: 1 });
     expect(Element.prototype.setPointerCapture).toHaveBeenCalledTimes(1);
   });
 
@@ -64,30 +64,59 @@ describe("VideoSlider", () => {
   it("does not block navigation when the active tile receives a genuine tap", () => {
     renderSlider();
     const link = screen.getByRole("link");
-    const notPrevented = fireEvent.click(link);
+    const notPrevented = fireEvent.click(link, { detail: 1 });
     expect(notPrevented).toBe(true);
   });
 
-  it("blocks navigation when a click follows an in-place drag on the active tile", () => {
+  it("blocks navigation when a mouse click follows an in-place drag on the active tile", () => {
     const root = renderSlider();
-    fireEvent.pointerDown(root, { clientX: 100, pointerId: 1 });
-    fireEvent.pointerMove(root, { clientX: 80, pointerId: 1 });
+    fireEvent.pointerDown(root, { clientX: 100, pointerId: 1, buttons: 1 });
+    fireEvent.pointerMove(root, { clientX: 80, pointerId: 1, buttons: 1 });
     fireEvent.pointerUp(root, { clientX: 80, pointerId: 1 });
     const link = screen.getByRole("link");
-    const notPrevented = fireEvent.click(link);
+    const notPrevented = fireEvent.click(link, { detail: 1 });
     expect(notPrevented).toBe(false);
   });
 
-  it("ignores a phantom click on an inactive tile that follows a completed drag", () => {
+  it("ignores a phantom mouse click on an inactive tile that follows a completed drag", () => {
     const root = renderSlider();
-    fireEvent.pointerDown(root, { clientX: 100, pointerId: 1 });
-    fireEvent.pointerMove(root, { clientX: 40, pointerId: 1 });
+    fireEvent.pointerDown(root, { clientX: 100, pointerId: 1, buttons: 1 });
+    fireEvent.pointerMove(root, { clientX: 40, pointerId: 1, buttons: 1 });
     fireEvent.pointerUp(root, { clientX: 40, pointerId: 1 });
     const activeHrefAfterDrag = screen.getByRole("link").getAttribute("href");
     expect(activeHrefAfterDrag).toBe(videos[1].youtube_url);
 
     const buttonsAfterDrag = screen.getAllByRole("button");
-    fireEvent.click(buttonsAfterDrag[0]);
+    fireEvent.click(buttonsAfterDrag[0], { detail: 1 });
     expect(screen.getByRole("link").getAttribute("href")).toBe(activeHrefAfterDrag);
+  });
+
+  it("does not swallow a keyboard-triggered click even if a drag left the moved flag set", () => {
+    const root = renderSlider();
+    fireEvent.pointerDown(root, { clientX: 100, pointerId: 1, buttons: 1 });
+    fireEvent.pointerMove(root, { clientX: 40, pointerId: 1, buttons: 1 });
+    fireEvent.pointerUp(root, { clientX: 40, pointerId: 1 });
+    const buttonsAfterDrag = screen.getAllByRole("button");
+    fireEvent.click(buttonsAfterDrag[0], { detail: 0 });
+    const link = screen.getByRole("link");
+    expect(link.getAttribute("href")).toBe(videos[0].youtube_url);
+  });
+
+  it("resets a stuck drag state when the pointer moves with no button held", () => {
+    const root = renderSlider();
+    fireEvent.pointerDown(root, { clientX: 100, pointerId: 1, buttons: 1 });
+    fireEvent.pointerMove(root, { clientX: 50, pointerId: 1, buttons: 0 });
+    expect(Element.prototype.setPointerCapture).not.toHaveBeenCalled();
+    const buttons = screen.getAllByRole("button");
+    fireEvent.click(buttons[1]);
+    const link = screen.getByRole("link");
+    expect(link.getAttribute("href")).toBe(videos[1].youtube_url);
+  });
+
+  it("keeps rel=noopener noreferrer and target=_blank on the active tile's link", () => {
+    renderSlider();
+    const link = screen.getByRole("link");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
   });
 });
