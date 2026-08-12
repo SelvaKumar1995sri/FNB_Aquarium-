@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 
 const DRAG_THRESHOLD = 50;
@@ -67,9 +68,11 @@ export default function VideoSlider({ videos }) {
         };
 
         return (
-          <div
+          <motion.div
             key={video.id}
-            className={`relative flex-shrink-0 rounded-lg overflow-hidden transition-all duration-500 ease-in-out ${
+            layout
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            className={`relative flex-shrink-0 rounded-lg overflow-hidden ${
               isActive ? "w-56 sm:w-72" : "w-10 sm:w-14"
             }`}
           >
@@ -106,7 +109,7 @@ export default function VideoSlider({ videos }) {
                 {video.title}
               </button>
             )}
-          </div>
+          </motion.div>
         );
       })}
     </div>

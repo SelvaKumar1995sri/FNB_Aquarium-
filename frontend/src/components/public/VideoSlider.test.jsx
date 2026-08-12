@@ -30,6 +30,12 @@ describe("VideoSlider", () => {
     expect(screen.getAllByRole("button")).toHaveLength(videos.length - 1);
   });
 
+  it("still renders one tile per video after the layout-animation wrapper is added", () => {
+    renderSlider();
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.getAllByRole("button")).toHaveLength(videos.length - 1);
+  });
+
   it("does not capture the pointer on a plain click with no movement", () => {
     const root = renderSlider();
     fireEvent.pointerDown(root, { clientX: 100, pointerId: 1 });
