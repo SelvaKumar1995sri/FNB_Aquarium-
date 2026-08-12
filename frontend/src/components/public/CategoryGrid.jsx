@@ -10,8 +10,8 @@ export default function CategoryGrid({ categories }) {
           className="border rounded-lg p-2 sm:p-4 text-center hover:shadow-md transition"
         >
           {category.image && (
-            <div className="w-full aspect-square overflow-hidden rounded mb-1 sm:mb-2">
-              <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
+            <div className="w-full aspect-square bg-gray-50 overflow-hidden rounded mb-1 sm:mb-2 flex items-center justify-center">
+              <img src={category.image} alt={category.name} className="max-w-full max-h-full object-contain" />
             </div>
           )}
           <span className="text-xs sm:text-base font-medium break-words">{category.name}</span>
