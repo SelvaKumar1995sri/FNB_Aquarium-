@@ -25,7 +25,7 @@ class ProductModelTests(TestCase):
             price=4500,
         )
         self.assertEqual(str(product), "60cm Rimless Tank")
-        self.assertTrue(product.in_stock)
+        self.assertFalse(product.in_stock)
         self.assertFalse(product.is_featured)
 
 
