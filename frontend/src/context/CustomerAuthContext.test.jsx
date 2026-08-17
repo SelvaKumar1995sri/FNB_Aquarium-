@@ -46,6 +46,22 @@ describe("CustomerAuthContext", () => {
     expect(localStorage.getItem("customer_refresh")).toBe("ref");
   });
 
+  it("login fails closed when the profile fetch fails after a successful token exchange", async () => {
+    customerApiClient.post.mockResolvedValueOnce({ data: { access: "acc", refresh: "ref" } });
+    customerApiClient.get.mockRejectedValueOnce(new Error("boom"));
+
+    const { result } = renderHook(() => useCustomerAuth(), { wrapper: CustomerAuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await expect(result.current.login("a@example.com", "pw123456789")).rejects.toThrow("boom");
+    });
+
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(localStorage.getItem("customer_access")).toBeNull();
+    expect(localStorage.getItem("customer_refresh")).toBeNull();
+  });
+
   it("register stores tokens and profile on success", async () => {
     customerApiClient.post.mockResolvedValueOnce({ data: { access: "acc2", refresh: "ref2" } });
     customerApiClient.get.mockResolvedValueOnce({

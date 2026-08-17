@@ -85,11 +85,16 @@ export function CustomerAuthProvider({ children }) {
   }, []);
 
   const persistSession = async (access, refresh) => {
-    localStorage.setItem("customer_access", access);
-    localStorage.setItem("customer_refresh", refresh);
-    setAccessToken(access);
-    const me = await customerApiClient.get("/accounts/me/", { headers: { Authorization: `Bearer ${access}` } });
-    setProfile(me.data);
+    try {
+      const me = await customerApiClient.get("/accounts/me/", { headers: { Authorization: `Bearer ${access}` } });
+      localStorage.setItem("customer_access", access);
+      localStorage.setItem("customer_refresh", refresh);
+      setAccessToken(access);
+      setProfile(me.data);
+    } catch (error) {
+      clearSession();
+      throw error;
+    }
   };
 
   const login = async (email, password) => {
