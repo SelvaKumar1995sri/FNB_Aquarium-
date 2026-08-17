@@ -62,6 +62,44 @@ describe("CustomerAuthContext", () => {
     expect(localStorage.getItem("customer_refresh")).toBeNull();
   });
 
+  it("login normalizes a mixed-case email before sending it to the backend", async () => {
+    customerApiClient.post.mockResolvedValueOnce({ data: { access: "acc", refresh: "ref" } });
+    customerApiClient.get.mockResolvedValueOnce({
+      data: { id: 1, email: "asha@example.com", name: "Asha", phone: "999", is_staff: false },
+    });
+
+    const { result } = renderHook(() => useCustomerAuth(), { wrapper: CustomerAuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.login("Asha@Example.com", "somepassword");
+    });
+
+    expect(customerApiClient.post).toHaveBeenCalledWith("/auth/login/", {
+      username: "asha@example.com", password: "somepassword",
+    });
+  });
+
+  it("register normalizes a mixed-case email before sending it to the backend", async () => {
+    customerApiClient.post.mockResolvedValueOnce({ data: { access: "acc2", refresh: "ref2" } });
+    customerApiClient.get.mockResolvedValueOnce({
+      data: { id: 2, email: "bala@example.com", name: "Bala", phone: "888", is_staff: false },
+    });
+
+    const { result } = renderHook(() => useCustomerAuth(), { wrapper: CustomerAuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.register({
+        name: "Bala", email: "Bala@Example.com", phone: "888", password: "pw123456789",
+      });
+    });
+
+    expect(customerApiClient.post).toHaveBeenCalledWith("/auth/register/", {
+      name: "Bala", email: "bala@example.com", phone: "888", password: "pw123456789",
+    });
+  });
+
   it("register stores tokens and profile on success", async () => {
     customerApiClient.post.mockResolvedValueOnce({ data: { access: "acc2", refresh: "ref2" } });
     customerApiClient.get.mockResolvedValueOnce({

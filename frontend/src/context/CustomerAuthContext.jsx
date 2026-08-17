@@ -98,12 +98,19 @@ export function CustomerAuthProvider({ children }) {
   };
 
   const login = async (email, password) => {
-    const response = await customerApiClient.post("/auth/login/", { username: email, password });
+    // The backend stores/looks up the email as a case-sensitive `username`
+    // (see accounts/serializers.py's RegisterSerializer, which lowercases on
+    // register). Normalizing here keeps this the single source of truth for
+    // what gets sent, so a customer who typed capitals at registration can
+    // still log in later regardless of how they capitalize it.
+    const normalizedEmail = email.trim().toLowerCase();
+    const response = await customerApiClient.post("/auth/login/", { username: normalizedEmail, password });
     await persistSession(response.data.access, response.data.refresh);
   };
 
   const register = async ({ name, email, phone, password }) => {
-    const response = await customerApiClient.post("/auth/register/", { name, email, phone, password });
+    const normalizedEmail = email.trim().toLowerCase();
+    const response = await customerApiClient.post("/auth/register/", { name, email: normalizedEmail, phone, password });
     await persistSession(response.data.access, response.data.refresh);
   };
 
