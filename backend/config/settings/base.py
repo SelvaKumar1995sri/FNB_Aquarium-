@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "core",
     "catalog",
     "inquiries",
+    "accounts",
 ]
 
 MIDDLEWARE = [
