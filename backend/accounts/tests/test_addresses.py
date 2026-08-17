@@ -49,6 +49,22 @@ class AddressViewSetTests(APITestCase):
         first.refresh_from_db()
         self.assertFalse(first.is_default)
 
+    def test_updating_non_default_address_to_default_unsets_previous_default(self):
+        first = Address.objects.create(
+            user=self.user, full_name="A", phone="1", line1="x", city="c", state="s", pincode="600001",
+            is_default=True,
+        )
+        second = Address.objects.create(
+            user=self.user, full_name="B", phone="2", line1="y", city="c", state="s", pincode="600002",
+            is_default=False,
+        )
+        response = self.client.patch(f"/api/v1/addresses/{second.id}/", {"is_default": True}, **self.auth_header)
+        self.assertEqual(response.status_code, 200)
+        first.refresh_from_db()
+        self.assertFalse(first.is_default)
+        second.refresh_from_db()
+        self.assertTrue(second.is_default)
+
     def test_cannot_access_another_users_address(self):
         theirs = Address.objects.create(
             user=self.other, full_name="Other", phone="1", line1="x", city="c", state="s", pincode="600001",
