@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
+import { useCustomerAuth } from "../../context/CustomerAuthContext";
 
 const NAV_LINKS = [
   { to: "/fish", label: "Fish" },
@@ -31,6 +32,7 @@ function SearchIcon(props) {
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, isStaff, logout } = useAuth();
+  const { isAuthenticated: isCustomerAuthenticated, profile, logout: customerLogout } = useCustomerAuth();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -68,6 +70,30 @@ export default function Header() {
             <Link to="/search" aria-label="Search" className="p-2 hover:text-brand-aqua">
               <SearchIcon className="h-5 w-5" />
             </Link>
+            {isCustomerAuthenticated ? (
+              <>
+                <Link
+                  to="/account/addresses"
+                  className="hidden sm:inline whitespace-nowrap text-sm px-3 py-1.5 hover:text-brand-aqua transition-colors"
+                >
+                  Hi, {profile?.name?.split(" ")[0] || "there"}
+                </Link>
+                <button
+                  type="button"
+                  onClick={customerLogout}
+                  className="whitespace-nowrap text-sm px-3 py-1.5 border border-white/30 rounded hover:border-brand-aqua hover:text-brand-aqua transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="whitespace-nowrap text-sm px-3 py-1.5 border border-white/30 rounded hover:border-brand-aqua hover:text-brand-aqua transition-colors"
+              >
+                Login
+              </Link>
+            )}
             {isAuthenticated && isStaff ? (
               <button
                 type="button"
