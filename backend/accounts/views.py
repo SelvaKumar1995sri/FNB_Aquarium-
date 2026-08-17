@@ -18,3 +18,18 @@ class RegisterView(APIView):
             {"access": str(refresh.access_token), "refresh": str(refresh)},
             status=status.HTTP_201_CREATED,
         )
+
+
+class MeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        profile = getattr(user, "customer_profile", None)
+        return Response({
+            "id": user.id,
+            "email": user.email,
+            "name": user.first_name,
+            "phone": profile.phone if profile else "",
+            "is_staff": user.is_staff,
+        })
