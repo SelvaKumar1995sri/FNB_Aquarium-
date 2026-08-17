@@ -94,6 +94,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "DEFAULT_THROTTLE_RATES": {
         "inquiry_create": "5/hour",
+        "register": "10/hour",
     },
 }
 

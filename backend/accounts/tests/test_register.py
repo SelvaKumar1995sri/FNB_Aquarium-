@@ -1,7 +1,11 @@
+from unittest import mock
+
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from rest_framework.test import APITestCase
 
 from accounts.models import CustomerProfile
+from accounts.throttles import RegisterThrottle
 
 User = get_user_model()
 
@@ -56,3 +60,30 @@ class RegisterViewTests(APITestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("access", response.json())
+
+
+class RegisterThrottleTests(APITestCase):
+    # See InquiryThrottleTests in inquiries/tests/test_views.py for why this
+    # patches `THROTTLE_RATES` directly rather than using `override_settings`.
+
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
+    @mock.patch.object(RegisterThrottle, "THROTTLE_RATES", {"register": "2/hour"})
+    def test_exceeding_rate_limit_returns_429(self):
+        def payload(email):
+            return {**VALID_PAYLOAD, "email": email}
+
+        first_response = self.client.post("/api/v1/auth/register/", payload("first@example.com"))
+        second_response = self.client.post("/api/v1/auth/register/", payload("second@example.com"))
+        third_response = self.client.post("/api/v1/auth/register/", payload("third@example.com"))
+
+        # The first two requests must actually succeed under the patched
+        # 2/hour rate — otherwise a 429 on the third request would prove
+        # nothing about the throttle actually being exercised.
+        self.assertEqual(first_response.status_code, 201)
+        self.assertEqual(second_response.status_code, 201)
+        self.assertEqual(third_response.status_code, 429)

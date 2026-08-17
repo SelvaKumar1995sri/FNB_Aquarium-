@@ -6,10 +6,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Address
 from .serializers import AddressSerializer, RegisterSerializer
+from .throttles import RegisterThrottle
 
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [RegisterThrottle]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
