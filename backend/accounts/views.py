@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import ProtectedError
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -60,3 +61,12 @@ class AddressViewSet(viewsets.ModelViewSet):
                 pk=serializer.instance.pk
             ).update(is_default=False)
         serializer.save()
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {"detail": "This address is used in a past order and can't be deleted."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )

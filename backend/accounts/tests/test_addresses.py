@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from accounts.models import Address
+from orders.models import Order
 
 User = get_user_model()
 
@@ -79,3 +80,15 @@ class AddressViewSetTests(APITestCase):
         response = self.client.delete(f"/api/v1/addresses/{mine.id}/", **self.auth_header)
         self.assertEqual(response.status_code, 204)
         self.assertFalse(Address.objects.filter(pk=mine.id).exists())
+
+    def test_deleting_address_used_in_an_order_returns_a_clean_error(self):
+        mine = Address.objects.create(
+            user=self.user, full_name="Mine", phone="2", line1="y", city="c", state="s", pincode="600002",
+        )
+        Order.objects.create(
+            user=self.user, address=mine, total_amount="100.00", razorpay_order_id="order_protect_test",
+        )
+        response = self.client.delete(f"/api/v1/addresses/{mine.id}/", **self.auth_header)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("detail", response.json())
+        self.assertTrue(Address.objects.filter(pk=mine.id).exists())
