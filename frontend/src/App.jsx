@@ -21,6 +21,8 @@ import CustomerLogin from "./pages/public/CustomerLogin";
 import Home from "./pages/public/Home";
 import NotFound from "./pages/public/NotFound";
 import OrderConfirmation from "./pages/public/OrderConfirmation";
+import OrderDetail from "./pages/public/OrderDetail";
+import OrderHistory from "./pages/public/OrderHistory";
 import Portfolio from "./pages/public/Portfolio";
 import ProductDetail from "./pages/public/ProductDetail";
 import Register from "./pages/public/Register";
@@ -53,6 +55,8 @@ export default function App() {
           <Route path="/account" element={<CustomerGuard />}>
             <Route index element={<Navigate to="/account/addresses" replace />} />
             <Route path="addresses" element={<AccountAddresses />} />
+            <Route path="orders" element={<OrderHistory />} />
+            <Route path="orders/:id" element={<OrderDetail />} />
           </Route>
           <Route path="/cart" element={<CustomerGuard />}>
             <Route index element={<Cart />} />

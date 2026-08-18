@@ -196,6 +196,13 @@ export default function Header() {
                 My Account
               </NavLink>
               <NavLink
+                to="/account/orders"
+                onClick={() => setIsOpen(false)}
+                className="px-2 py-2 rounded hover:bg-white/10 hover:text-brand-aqua"
+              >
+                My Orders
+              </NavLink>
+              <NavLink
                 to="/cart"
                 onClick={() => setIsOpen(false)}
                 className="px-2 py-2 rounded hover:bg-white/10 hover:text-brand-aqua"
