@@ -115,7 +115,7 @@ export default function OrderDetailManager() {
           {order.items.map((item) => (
             <div key={item.id} className="flex justify-between text-sm">
               <span>{item.product_name} × {item.quantity}</span>
-              <span>₹{item.unit_price}</span>
+              <span>₹{(Number(item.unit_price) * item.quantity).toFixed(2)}</span>
             </div>
           ))}
         </div>

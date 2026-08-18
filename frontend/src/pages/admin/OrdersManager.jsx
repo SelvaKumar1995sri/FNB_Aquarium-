@@ -16,15 +16,28 @@ export default function OrdersManager() {
   const [orders, setOrders] = useState([]);
   const [ordersError, setOrdersError] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
+  const [nextUrl, setNextUrl] = useState(null);
+  const [previousUrl, setPreviousUrl] = useState(null);
+  const [count, setCount] = useState(0);
 
-  useEffect(() => {
-    apiClient
-      .get("/admin/orders/", { params: statusFilter ? { status: statusFilter } : {} })
+  const load = (url) => {
+    const request = url
+      ? apiClient.get(url)
+      : apiClient.get("/admin/orders/", { params: statusFilter ? { status: statusFilter } : {} });
+    request
       .then((response) => {
         setOrders(response.data.results);
+        setNextUrl(response.data.next);
+        setPreviousUrl(response.data.previous);
+        setCount(response.data.count);
         setOrdersError(false);
       })
       .catch(() => setOrdersError(true));
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
   return (
@@ -57,6 +70,25 @@ export default function OrdersManager() {
         </tbody>
       </table>
       {orders.length === 0 && !ordersError && <p className="text-gray-500 mt-4">No orders.</p>}
+      <div className="flex justify-between items-center mt-4 text-sm">
+        <button
+          type="button"
+          onClick={() => load(previousUrl)}
+          disabled={!previousUrl}
+          className="border rounded px-3 py-1.5 disabled:opacity-40"
+        >
+          Previous
+        </button>
+        <span className="text-gray-500">{count} order{count === 1 ? "" : "s"}</span>
+        <button
+          type="button"
+          onClick={() => load(nextUrl)}
+          disabled={!nextUrl}
+          className="border rounded px-3 py-1.5 disabled:opacity-40"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

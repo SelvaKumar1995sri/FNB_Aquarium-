@@ -533,3 +533,33 @@ class AdminOrderViewSetTests(APITestCase):
         response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "delivered"})
 
         self.assertEqual(response.status_code, 200)
+
+    def test_tracking_fields_rejected_on_non_transported_transition(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_packed_with_porter", status="placed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {
+            "status": "packed", "porter_name": "Ravi",
+        })
+
+        self.assertEqual(response.status_code, 400)
+        order.refresh_from_db()
+        self.assertEqual(order.porter_name, "")
+
+    def test_rejects_transported_when_porter_already_stored_and_courier_submitted(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_two_step_attack", status="packed",
+            porter_name="Ravi", porter_phone="9999999999",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {
+            "status": "transported",
+            "courier_name": "BlueDart", "courier_tracking_number": "BD123",
+        })
+
+        self.assertEqual(response.status_code, 400)

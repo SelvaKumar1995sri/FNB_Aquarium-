@@ -40,6 +40,9 @@ class AdminOrderStatusUpdateSerializer(serializers.ModelSerializer):
         model = Order
         fields = ["status", "porter_name", "porter_phone", "courier_name", "courier_tracking_number"]
 
+    def _tracking_value(self, attrs, field):
+        return attrs.get(field, getattr(self.instance, field, "") or "")
+
     def validate(self, attrs):
         if "status" not in attrs:
             raise serializers.ValidationError({"status": "Status is required."})
@@ -51,11 +54,17 @@ class AdminOrderStatusUpdateSerializer(serializers.ModelSerializer):
                 {"status": f"Cannot move an order from '{self.instance.status}' to '{new_status}'."}
             )
 
+        tracking_fields = ("porter_name", "porter_phone", "courier_name", "courier_tracking_number")
+        if new_status != "transported" and any(field in attrs for field in tracking_fields):
+            raise serializers.ValidationError(
+                "Tracking details can only be set when moving an order to transported."
+            )
+
         if new_status == "transported":
-            porter_name = attrs.get("porter_name", "")
-            porter_phone = attrs.get("porter_phone", "")
-            courier_name = attrs.get("courier_name", "")
-            courier_tracking_number = attrs.get("courier_tracking_number", "")
+            porter_name = self._tracking_value(attrs, "porter_name")
+            porter_phone = self._tracking_value(attrs, "porter_phone")
+            courier_name = self._tracking_value(attrs, "courier_name")
+            courier_tracking_number = self._tracking_value(attrs, "courier_tracking_number")
             porter_complete = bool(porter_name) and bool(porter_phone)
             courier_complete = bool(courier_name) and bool(courier_tracking_number)
             porter_partial = bool(porter_name) != bool(porter_phone)
