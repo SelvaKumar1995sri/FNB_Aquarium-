@@ -142,3 +142,77 @@ class AddCartItemViewTests(APITestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("quantity", response.json())
+
+
+class CartItemDetailViewTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="a@example.com", password="pw12345678")
+        self.other = User.objects.create_user(username="b@example.com", password="pw12345678")
+        login = self.client.post("/api/v1/auth/login/", {"username": "a@example.com", "password": "pw12345678"})
+        self.auth_header = {"HTTP_AUTHORIZATION": f"Bearer {login.json()['access']}"}
+        self.category = Category.objects.create(name="Tanks", slug="tanks")
+        self.product = Product.objects.create(
+            name="Tank", slug="tank", category=self.category, price="100.00", stock_quantity=5
+        )
+        self.cart = Cart.objects.create(user=self.user)
+        self.item = CartItem.objects.create(cart=self.cart, product=self.product, quantity=2)
+
+    def test_patch_requires_authentication(self):
+        response = self.client.patch(f"/api/v1/cart/items/{self.item.id}/", {"quantity": 3})
+        self.assertEqual(response.status_code, 401)
+
+    def test_patch_updates_quantity(self):
+        response = self.client.patch(
+            f"/api/v1/cart/items/{self.item.id}/", {"quantity": 4}, **self.auth_header
+        )
+        self.assertEqual(response.status_code, 200)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 4)
+        self.assertEqual(response.json()["subtotal"], "400.00")
+
+    def test_patch_rejects_quantity_exceeding_stock(self):
+        response = self.client.patch(
+            f"/api/v1/cart/items/{self.item.id}/", {"quantity": 6}, **self.auth_header
+        )
+        self.assertEqual(response.status_code, 400)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 2)
+
+    def test_patch_another_users_item_404s(self):
+        their_cart = Cart.objects.create(user=self.other)
+        their_item = CartItem.objects.create(cart=their_cart, product=self.product, quantity=1)
+        response = self.client.patch(
+            f"/api/v1/cart/items/{their_item.id}/", {"quantity": 2}, **self.auth_header
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_patch_rejects_non_numeric_quantity(self):
+        response = self.client.patch(
+            f"/api/v1/cart/items/{self.item.id}/", {"quantity": "abc"}, **self.auth_header
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("quantity", response.json())
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 2)
+
+    def test_patch_rejects_null_quantity(self):
+        response = self.client.patch(
+            f"/api/v1/cart/items/{self.item.id}/", {"quantity": None}, **self.auth_header, format="json"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("quantity", response.json())
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 2)
+
+    def test_delete_removes_item_and_returns_updated_cart(self):
+        response = self.client.delete(f"/api/v1/cart/items/{self.item.id}/", **self.auth_header)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"id": self.cart.id, "items": [], "subtotal": "0.00"})
+        self.assertFalse(CartItem.objects.filter(pk=self.item.id).exists())
+
+    def test_delete_another_users_item_404s(self):
+        their_cart = Cart.objects.create(user=self.other)
+        their_item = CartItem.objects.create(cart=their_cart, product=self.product, quantity=1)
+        response = self.client.delete(f"/api/v1/cart/items/{their_item.id}/", **self.auth_header)
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(CartItem.objects.filter(pk=their_item.id).exists())

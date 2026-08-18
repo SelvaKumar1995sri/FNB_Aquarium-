@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,6 +15,10 @@ EMPTY_CART = {"id": None, "items": [], "subtotal": "0.00"}
 class AddCartItemInputSerializer(serializers.Serializer):
     product = serializers.IntegerField(required=True)
     quantity = serializers.IntegerField(min_value=1, required=False, default=1)
+
+
+class UpdateCartItemInputSerializer(serializers.Serializer):
+    quantity = serializers.IntegerField(min_value=1, required=False)
 
 
 class CartDetailView(APIView):
@@ -60,3 +65,39 @@ class AddCartItemView(APIView):
         cart.refresh_from_db()
         serializer = CartSerializer(cart, context={"request": request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class CartItemDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_item(self, request, item_id):
+        return get_object_or_404(CartItem, pk=item_id, cart__user=request.user)
+
+    @transaction.atomic
+    def patch(self, request, item_id):
+        item = self.get_item(request, item_id)
+
+        input_serializer = UpdateCartItemInputSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        quantity = input_serializer.validated_data.get("quantity", item.quantity)
+
+        if quantity > item.product.stock_quantity:
+            raise serializers.ValidationError(
+                {"quantity": f"Only {item.product.stock_quantity} left in stock."}
+            )
+
+        item.quantity = quantity
+        item.save()
+
+        cart = item.cart
+        cart.refresh_from_db()
+        serializer = CartSerializer(cart, context={"request": request})
+        return Response(serializer.data)
+
+    def delete(self, request, item_id):
+        item = self.get_item(request, item_id)
+        cart = item.cart
+        item.delete()
+        cart.refresh_from_db()
+        serializer = CartSerializer(cart, context={"request": request})
+        return Response(serializer.data)
