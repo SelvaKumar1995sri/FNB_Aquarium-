@@ -1,12 +1,16 @@
+import hashlib
+import hmac
+import json
 from unittest.mock import MagicMock, patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from accounts.models import Address
 from cart.models import Cart, CartItem
 from catalog.models import Category, Product
-from orders.models import CheckoutSession
+from orders.models import CheckoutSession, Order, OrderItem
 
 User = get_user_model()
 
@@ -87,3 +91,103 @@ class CheckoutViewTests(APITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("address", response.json())
         mock_get_client.assert_not_called()
+
+
+class RazorpayWebhookViewTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="a@example.com", password="pw12345678")
+        self.address = Address.objects.create(
+            user=self.user, full_name="A", phone="1234567890", line1="1 Rd",
+            city="City", state="State", pincode="500001",
+        )
+        self.category = Category.objects.create(name="Tanks", slug="tanks")
+        self.product = Product.objects.create(
+            name="Tank", slug="tank", category=self.category, price="100.00", stock_quantity=5,
+        )
+        self.cart = Cart.objects.create(user=self.user)
+        CartItem.objects.create(cart=self.cart, product=self.product, quantity=2)
+        self.session = CheckoutSession.objects.create(
+            user=self.user,
+            address=self.address,
+            razorpay_order_id="order_webhook_test",
+            amount="200.00",
+            items_snapshot=[
+                {"product_id": self.product.id, "name": "Tank", "unit_price": "100.00", "quantity": 2},
+            ],
+        )
+
+    def _post_webhook(self, event="payment.captured", order_id="order_webhook_test", payment_id="pay_test1", signature=None):
+        payload = {
+            "event": event,
+            "payload": {
+                "payment": {"entity": {"id": payment_id, "order_id": order_id, "amount": 20000, "status": "captured"}}
+            },
+        }
+        body = json.dumps(payload).encode()
+        if signature is None:
+            signature = hmac.new(settings.RAZORPAY_WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
+        return self.client.post(
+            "/api/v1/payments/webhook/", data=body, content_type="application/json",
+            HTTP_X_RAZORPAY_SIGNATURE=signature,
+        )
+
+    def test_rejects_invalid_signature(self):
+        response = self._post_webhook(signature="not-a-real-signature")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Order.objects.exists())
+
+    def test_ignores_non_captured_events(self):
+        response = self._post_webhook(event="payment.failed")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.exists())
+
+    def test_ignores_unknown_razorpay_order_id(self):
+        response = self._post_webhook(order_id="order_never_created")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.exists())
+
+    def test_creates_order_and_decrements_stock_on_captured_payment(self):
+        response = self._post_webhook()
+
+        self.assertEqual(response.status_code, 200)
+        order = Order.objects.get(razorpay_order_id="order_webhook_test")
+        self.assertEqual(order.user, self.user)
+        self.assertEqual(order.address, self.address)
+        self.assertEqual(str(order.total_amount), "200.00")
+        self.assertEqual(order.razorpay_payment_id, "pay_test1")
+
+        items = list(OrderItem.objects.filter(order=order))
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].product_name, "Tank")
+        self.assertEqual(items[0].quantity, 2)
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock_quantity, 3)
+
+        self.assertFalse(CartItem.objects.filter(cart__user=self.user).exists())
+
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.order, order)
+
+    def test_duplicate_webhook_delivery_is_idempotent(self):
+        self._post_webhook()
+        response = self._post_webhook()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Order.objects.filter(razorpay_order_id="order_webhook_test").count(), 1)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock_quantity, 3)
+
+    def test_clamps_stock_at_zero_when_oversold(self):
+        self.product.stock_quantity = 1
+        self.product.save()
+
+        response = self._post_webhook()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Order.objects.filter(razorpay_order_id="order_webhook_test").exists())
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock_quantity, 0)

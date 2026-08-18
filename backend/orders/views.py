@@ -1,14 +1,18 @@
+import json
 from decimal import Decimal
 
 from django.conf import settings
+from django.db import transaction
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import Address
-from cart.models import Cart
+from cart.models import Cart, CartItem
+from catalog.models import Product
+from razorpay.errors import SignatureVerificationError
 
-from .models import CheckoutSession
+from .models import CheckoutSession, Order, OrderItem
 from .razorpay_client import get_razorpay_client
 
 
@@ -67,3 +71,68 @@ class CheckoutView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class RazorpayWebhookView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        signature = request.headers.get("X-Razorpay-Signature", "")
+        client = get_razorpay_client()
+        try:
+            client.utility.verify_webhook_signature(
+                request.body.decode("utf-8"), signature, settings.RAZORPAY_WEBHOOK_SECRET
+            )
+        except SignatureVerificationError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        payload = json.loads(request.body)
+        if payload.get("event") != "payment.captured":
+            return Response(status=status.HTTP_200_OK)
+
+        payment_entity = payload["payload"]["payment"]["entity"]
+        razorpay_order_id = payment_entity["order_id"]
+        razorpay_payment_id = payment_entity["id"]
+
+        with transaction.atomic():
+            session = (
+                CheckoutSession.objects.select_for_update()
+                .filter(razorpay_order_id=razorpay_order_id)
+                .first()
+            )
+            if not session or session.order_id:
+                return Response(status=status.HTTP_200_OK)
+
+            order = Order.objects.create(
+                user=session.user,
+                address=session.address,
+                total_amount=session.amount,
+                razorpay_order_id=razorpay_order_id,
+                razorpay_payment_id=razorpay_payment_id,
+            )
+
+            product_ids = [item["product_id"] for item in session.items_snapshot if item["product_id"]]
+            locked_products = {
+                product.id: product
+                for product in Product.objects.select_for_update().filter(id__in=product_ids)
+            }
+
+            for item in session.items_snapshot:
+                product = locked_products.get(item["product_id"])
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    product_name=item["name"],
+                    unit_price=item["unit_price"],
+                    quantity=item["quantity"],
+                )
+                if product:
+                    product.stock_quantity = max(0, product.stock_quantity - item["quantity"])
+                    product.save()
+
+            session.order = order
+            session.save()
+
+            CartItem.objects.filter(cart__user=session.user).delete()
+
+        return Response(status=status.HTTP_200_OK)
