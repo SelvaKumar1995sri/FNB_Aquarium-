@@ -7,6 +7,7 @@ import PublicLayout from "./layouts/PublicLayout";
 import CategoriesManager from "./pages/admin/CategoriesManager";
 import InquiriesManager from "./pages/admin/InquiriesManager";
 import Login from "./pages/admin/Login";
+import OrderDetailManager from "./pages/admin/OrderDetailManager";
 import OrdersManager from "./pages/admin/OrdersManager";
 import ProductsManager from "./pages/admin/ProductsManager";
 import VideosManager from "./pages/admin/VideosManager";
@@ -75,6 +76,7 @@ export default function App() {
             <Route path="videos" element={<VideosManager />} />
             <Route path="inquiries" element={<InquiriesManager />} />
             <Route path="orders" element={<OrdersManager />} />
+            <Route path="orders/:id" element={<OrderDetailManager />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Route>
