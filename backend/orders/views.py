@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
-from rest_framework import permissions, serializers, status
+from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -166,3 +166,15 @@ class OrderByRazorpayOrderView(APIView):
         if not order:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(OrderSerializer(order).data)
+
+
+class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return (
+            Order.objects.filter(user=self.request.user)
+            .select_related("address", "user")
+            .prefetch_related("items")
+        )

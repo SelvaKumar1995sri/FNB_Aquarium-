@@ -255,3 +255,86 @@ class OrderByRazorpayOrderViewTests(APITestCase):
             "/api/v1/orders/by-razorpay-order/order_lookup_test/", **other_auth_header
         )
         self.assertEqual(response.status_code, 404)
+
+
+class OrderViewSetTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="a@example.com", password="pw12345678", first_name="Asha",
+        )
+        self.other = User.objects.create_user(username="b@example.com", password="pw12345678")
+        login = self.client.post("/api/v1/auth/login/", {"username": "a@example.com", "password": "pw12345678"})
+        self.auth_header = {"HTTP_AUTHORIZATION": f"Bearer {login.json()['access']}"}
+        self.address = Address.objects.create(
+            user=self.user, full_name="Asha", phone="1234567890", line1="1 Rd",
+            city="City", state="State", pincode="500001",
+        )
+        self.category = Category.objects.create(name="Tanks", slug="tanks")
+        self.product = Product.objects.create(
+            name="Tank", slug="tank", category=self.category, price="100.00", stock_quantity=5,
+        )
+
+    def test_requires_authentication_for_list(self):
+        response = self.client.get("/api/v1/orders/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_lists_only_own_orders(self):
+        mine = Order.objects.create(
+            user=self.user, address=self.address, total_amount="100.00", razorpay_order_id="order_mine",
+        )
+        theirs_address = Address.objects.create(
+            user=self.other, full_name="B", phone="1", line1="x", city="c", state="s", pincode="600001",
+        )
+        Order.objects.create(
+            user=self.other, address=theirs_address, total_amount="200.00", razorpay_order_id="order_theirs",
+        )
+
+        response = self.client.get("/api/v1/orders/", **self.auth_header)
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()["results"]
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["id"], mine.id)
+
+    def test_orders_are_listed_newest_first(self):
+        older = Order.objects.create(
+            user=self.user, address=self.address, total_amount="100.00", razorpay_order_id="order_old",
+        )
+        newer = Order.objects.create(
+            user=self.user, address=self.address, total_amount="150.00", razorpay_order_id="order_new",
+        )
+
+        response = self.client.get("/api/v1/orders/", **self.auth_header)
+
+        ids = [item["id"] for item in response.json()["results"]]
+        self.assertEqual(ids, [newer.id, older.id])
+
+    def test_retrieve_own_order_detail_includes_address_and_items(self):
+        order = Order.objects.create(
+            user=self.user, address=self.address, total_amount="200.00", razorpay_order_id="order_detail_test",
+        )
+        OrderItem.objects.create(
+            order=order, product=self.product, product_name="Tank", unit_price="100.00", quantity=2,
+        )
+
+        response = self.client.get(f"/api/v1/orders/{order.id}/", **self.auth_header)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "placed")
+        self.assertEqual(data["address"]["full_name"], "Asha")
+        self.assertEqual(data["customer_name"], "Asha")
+        self.assertEqual(len(data["items"]), 1)
+        self.assertEqual(data["items"][0]["product_name"], "Tank")
+
+    def test_cannot_retrieve_another_users_order(self):
+        theirs_address = Address.objects.create(
+            user=self.other, full_name="B", phone="1", line1="x", city="c", state="s", pincode="600001",
+        )
+        theirs = Order.objects.create(
+            user=self.other, address=theirs_address, total_amount="200.00", razorpay_order_id="order_theirs_2",
+        )
+
+        response = self.client.get(f"/api/v1/orders/{theirs.id}/", **self.auth_header)
+
+        self.assertEqual(response.status_code, 404)
