@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
@@ -22,6 +23,7 @@ class AdminNotificationsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        as_of = timezone.now()
         state, _ = AdminNotificationState.objects.get_or_create(user=request.user)
         last_seen_at = state.last_seen_at
 
@@ -33,6 +35,7 @@ class AdminNotificationsView(APIView):
         )
 
         return Response({
+            "as_of": as_of,
             "unread_orders_count": unread_orders.count(),
             "unread_inquiries_count": unread_inquiries.count(),
             "latest_orders": [
@@ -62,7 +65,17 @@ class AdminNotificationsSeenView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request):
+        now = timezone.now()
+        seen_up_to = None
+        raw = request.data.get("seen_up_to")
+        if isinstance(raw, str):
+            parsed = parse_datetime(raw)
+            if parsed is not None and timezone.is_aware(parsed) and parsed <= now:
+                seen_up_to = parsed
+        if seen_up_to is None:
+            seen_up_to = now
+
         state, _ = AdminNotificationState.objects.get_or_create(user=request.user)
-        state.last_seen_at = timezone.now()
+        state.last_seen_at = seen_up_to
         state.save()
         return Response(status=status.HTTP_204_NO_CONTENT)

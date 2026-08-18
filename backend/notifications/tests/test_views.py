@@ -103,3 +103,52 @@ class AdminNotificationsViewTests(APITestCase):
         self.client.force_authenticate(user=self.customer)
         response = self.client.post("/api/v1/admin/notifications/seen/")
         self.assertEqual(response.status_code, 403)
+
+    def test_get_includes_as_of_timestamp(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.get("/api/v1/admin/notifications/")
+
+        self.assertIn("as_of", response.json())
+
+    def test_seen_accepts_explicit_seen_up_to_and_does_not_hide_orders_created_after_it(self):
+        self.client.force_authenticate(user=self.staff)
+
+        first_check = self.client.get("/api/v1/admin/notifications/")
+        as_of = first_check.json()["as_of"]
+
+        Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_during_dropdown",
+        )
+
+        seen_response = self.client.post("/api/v1/admin/notifications/seen/", {"seen_up_to": as_of}, format="json")
+        self.assertEqual(seen_response.status_code, 204)
+
+        response = self.client.get("/api/v1/admin/notifications/")
+        self.assertEqual(response.json()["unread_orders_count"], 1)
+
+    def test_seen_ignores_a_future_seen_up_to(self):
+        self.client.force_authenticate(user=self.staff)
+        far_future = "2999-01-01T00:00:00Z"
+
+        seen_response = self.client.post("/api/v1/admin/notifications/seen/", {"seen_up_to": far_future}, format="json")
+        self.assertEqual(seen_response.status_code, 204)
+
+        Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_after_clamped_seen",
+        )
+
+        response = self.client.get("/api/v1/admin/notifications/")
+        self.assertEqual(response.json()["unread_orders_count"], 1)
+
+    def test_seen_falls_back_to_now_for_malformed_seen_up_to(self):
+        self.client.force_authenticate(user=self.staff)
+        Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_before_seen",
+        )
+
+        seen_response = self.client.post("/api/v1/admin/notifications/seen/", {"seen_up_to": "not-a-date"}, format="json")
+        self.assertEqual(seen_response.status_code, 204)
+
+        response = self.client.get("/api/v1/admin/notifications/")
+        self.assertEqual(response.json()["unread_orders_count"], 0)

@@ -54,6 +54,7 @@ function BellIcon(props) {
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [notifSnapshot, setNotifSnapshot] = useState({ orders: [], inquiries: [] });
   const { isAuthenticated, isStaff, logout } = useAuth();
   const { isAuthenticated: isCustomerAuthenticated, profile, logout: customerLogout } = useCustomerAuth();
   const { itemCount } = useCart();
@@ -76,6 +77,9 @@ export default function Header() {
 
   const toggleNotifDropdown = () => {
     const opening = !isNotifOpen;
+    if (opening) {
+      setNotifSnapshot({ orders: latestOrders, inquiries: latestInquiries });
+    }
     setIsNotifOpen(opening);
     if (opening && totalUnread > 0) markSeen();
   };
@@ -165,10 +169,10 @@ export default function Header() {
                 {isNotifOpen && (
                   <div className="absolute right-0 mt-2 w-72 bg-white text-brand-dark rounded-lg shadow-xl border z-50 max-h-96 overflow-y-auto">
                     <div className="p-3 border-b font-semibold text-sm">Notifications</div>
-                    {latestOrders.length === 0 && latestInquiries.length === 0 && (
+                    {notifSnapshot.orders.length === 0 && notifSnapshot.inquiries.length === 0 && (
                       <p className="p-3 text-sm text-gray-500">No new notifications.</p>
                     )}
-                    {latestOrders.map((order) => (
+                    {notifSnapshot.orders.map((order) => (
                       <Link
                         key={`order-${order.id}`}
                         to={`/admin/orders/${order.id}`}
@@ -178,7 +182,7 @@ export default function Header() {
                         New order #{order.id} — {order.customer_name || order.customer_email}
                       </Link>
                     ))}
-                    {latestInquiries.map((inquiry) => (
+                    {notifSnapshot.inquiries.map((inquiry) => (
                       <Link
                         key={`inquiry-${inquiry.id}`}
                         to="/admin/inquiries"

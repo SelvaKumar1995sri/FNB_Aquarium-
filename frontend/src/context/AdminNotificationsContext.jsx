@@ -10,6 +10,7 @@ const EMPTY_STATE = {
   unreadInquiriesCount: 0,
   latestOrders: [],
   latestInquiries: [],
+  asOf: null,
 };
 
 const POLL_INTERVAL_MS = 30000;
@@ -31,6 +32,7 @@ export function AdminNotificationsProvider({ children }) {
           unreadInquiriesCount: response.data.unread_inquiries_count,
           latestOrders: response.data.latest_orders,
           latestInquiries: response.data.latest_inquiries,
+          asOf: response.data.as_of,
         });
       })
       .catch(() => setState(EMPTY_STATE));
@@ -44,7 +46,7 @@ export function AdminNotificationsProvider({ children }) {
   }, [isAuthenticated, isStaff, refresh]);
 
   const markSeen = async () => {
-    await apiClient.post("/admin/notifications/seen/");
+    await apiClient.post("/admin/notifications/seen/", { seen_up_to: state.asOf });
     setState((prev) => ({ ...prev, unreadOrdersCount: 0, unreadInquiriesCount: 0 }));
   };
 

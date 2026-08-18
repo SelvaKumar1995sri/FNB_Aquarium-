@@ -14,6 +14,7 @@ vi.mock("./AuthContext", () => ({
 }));
 
 const EMPTY_RESPONSE = {
+  as_of: "2026-08-18T00:00:00Z",
   unread_orders_count: 0,
   unread_inquiries_count: 0,
   latest_orders: [],
@@ -21,6 +22,7 @@ const EMPTY_RESPONSE = {
 };
 
 const WITH_UNREAD_RESPONSE = {
+  as_of: "2026-08-18T00:05:00Z",
   unread_orders_count: 2,
   unread_inquiries_count: 1,
   latest_orders: [
@@ -80,7 +82,7 @@ describe("AdminNotificationsContext", () => {
     vi.useRealTimers();
   });
 
-  it("markSeen posts to the seen endpoint and zeroes unread counts locally", async () => {
+  it("markSeen posts the last-fetched as_of as seen_up_to and zeroes unread counts locally", async () => {
     apiClient.get.mockResolvedValueOnce({ data: WITH_UNREAD_RESPONSE });
     apiClient.post.mockResolvedValueOnce({ status: 204 });
 
@@ -91,7 +93,7 @@ describe("AdminNotificationsContext", () => {
       await result.current.markSeen();
     });
 
-    expect(apiClient.post).toHaveBeenCalledWith("/admin/notifications/seen/");
+    expect(apiClient.post).toHaveBeenCalledWith("/admin/notifications/seen/", { seen_up_to: WITH_UNREAD_RESPONSE.as_of });
     expect(result.current.unreadOrdersCount).toBe(0);
     expect(result.current.unreadInquiriesCount).toBe(0);
   });
