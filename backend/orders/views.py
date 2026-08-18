@@ -1,7 +1,6 @@
 from decimal import Decimal
 
 from django.conf import settings
-from django.db import transaction
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,7 +15,6 @@ from .razorpay_client import get_razorpay_client
 class CheckoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @transaction.atomic
     def post(self, request):
         address_id = request.data.get("address")
         address = Address.objects.filter(pk=address_id, user=request.user).first()
