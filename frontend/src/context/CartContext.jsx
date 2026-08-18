@@ -21,6 +21,7 @@ export function CartProvider({ children }) {
     return customerApiClient
       .get("/cart/")
       .then((response) => setCart(response.data))
+      .catch(() => setCart(EMPTY_CART))
       .finally(() => setIsLoading(false));
   }, [isCustomerAuthenticated]);
 

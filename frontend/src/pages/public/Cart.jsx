@@ -89,7 +89,9 @@ export default function Cart() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                  onClick={() =>
+                    handleUpdateQuantity(item.id, Math.min(item.quantity - 1, item.product_stock_quantity))
+                  }
                   disabled={item.quantity <= 1 || isPending}
                   className="border rounded w-8 h-8 disabled:opacity-40"
                   aria-label={`Decrease quantity of ${item.product_name}`}

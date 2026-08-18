@@ -216,3 +216,19 @@ class CartItemDetailViewTests(APITestCase):
         response = self.client.delete(f"/api/v1/cart/items/{their_item.id}/", **self.auth_header)
         self.assertEqual(response.status_code, 404)
         self.assertTrue(CartItem.objects.filter(pk=their_item.id).exists())
+
+    def test_patch_allows_decreasing_quantity_below_reduced_stock(self):
+        # Simulate stock having been reduced below the cart item's quantity after it was added
+        # (e.g. staff drops stock_quantity in the admin after the customer already added 5 to cart).
+        self.product.stock_quantity = 2
+        self.product.save()
+        self.item.quantity = 5
+        self.item.save()
+
+        response = self.client.patch(
+            f"/api/v1/cart/items/{self.item.id}/", {"quantity": 4}, **self.auth_header
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 4)

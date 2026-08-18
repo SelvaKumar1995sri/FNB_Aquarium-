@@ -12,6 +12,11 @@ from .serializers import CartSerializer
 EMPTY_CART = {"id": None, "items": [], "subtotal": "0.00"}
 
 
+def _cart_response(request, cart_pk, status_code=status.HTTP_200_OK):
+    cart = Cart.objects.filter(pk=cart_pk).prefetch_related("items__product__images").first()
+    return Response(CartSerializer(cart, context={"request": request}).data, status=status_code)
+
+
 class AddCartItemInputSerializer(serializers.Serializer):
     product = serializers.IntegerField(required=True)
     quantity = serializers.IntegerField(min_value=1, required=False, default=1)
@@ -62,9 +67,7 @@ class AddCartItemView(APIView):
             item.quantity = requested_total
             item.save()
 
-        cart.refresh_from_db()
-        serializer = CartSerializer(cart, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return _cart_response(request, cart.pk, status_code=status.HTTP_201_CREATED)
 
 
 class CartItemDetailView(APIView):
@@ -81,7 +84,7 @@ class CartItemDetailView(APIView):
         input_serializer.is_valid(raise_exception=True)
         quantity = input_serializer.validated_data.get("quantity", item.quantity)
 
-        if quantity > item.product.stock_quantity:
+        if quantity > item.product.stock_quantity and quantity > item.quantity:
             raise serializers.ValidationError(
                 {"quantity": f"Only {item.product.stock_quantity} left in stock."}
             )
@@ -89,15 +92,10 @@ class CartItemDetailView(APIView):
         item.quantity = quantity
         item.save()
 
-        cart = item.cart
-        cart.refresh_from_db()
-        serializer = CartSerializer(cart, context={"request": request})
-        return Response(serializer.data)
+        return _cart_response(request, item.cart_id)
 
     def delete(self, request, item_id):
         item = self.get_item(request, item_id)
-        cart = item.cart
+        cart_id = item.cart_id
         item.delete()
-        cart.refresh_from_db()
-        serializer = CartSerializer(cart, context={"request": request})
-        return Response(serializer.data)
+        return _cart_response(request, cart_id)
