@@ -137,6 +137,16 @@ class RazorpayWebhookViewTests(APITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(Order.objects.exists())
 
+    def test_rejects_non_ascii_signature_header_without_crashing(self):
+        # Django decodes headers as latin-1, so a header byte >0x7F surfaces to the view as a
+        # non-ASCII str. The Razorpay SDK's underlying hmac.compare_digest() raises TypeError
+        # for non-ASCII str comparisons; this must be treated as an invalid signature (400),
+        # not propagate as an uncaught 500.
+        response = self._post_webhook(signature="\xe9signature")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Order.objects.exists())
+
     def test_ignores_non_captured_events(self):
         response = self._post_webhook(event="payment.failed")
 

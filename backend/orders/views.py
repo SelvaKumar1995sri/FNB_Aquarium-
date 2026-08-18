@@ -1,4 +1,5 @@
 import json
+import logging
 from decimal import Decimal
 
 from django.conf import settings
@@ -14,6 +15,8 @@ from razorpay.errors import SignatureVerificationError
 
 from .models import CheckoutSession, Order, OrderItem
 from .razorpay_client import get_razorpay_client
+
+logger = logging.getLogger(__name__)
 
 
 class CheckoutView(APIView):
@@ -83,7 +86,8 @@ class RazorpayWebhookView(APIView):
             client.utility.verify_webhook_signature(
                 request.body.decode("utf-8"), signature, settings.RAZORPAY_WEBHOOK_SECRET
             )
-        except SignatureVerificationError:
+        except (SignatureVerificationError, TypeError, UnicodeDecodeError):
+            logger.error("Razorpay webhook rejected: invalid or malformed signature")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         payload = json.loads(request.body)
@@ -100,7 +104,18 @@ class RazorpayWebhookView(APIView):
                 .filter(razorpay_order_id=razorpay_order_id)
                 .first()
             )
-            if not session or session.order_id:
+            if not session:
+                logger.error(
+                    "Razorpay webhook payment.captured for unknown razorpay_order_id=%s "
+                    "razorpay_payment_id=%s: no matching CheckoutSession",
+                    razorpay_order_id, razorpay_payment_id,
+                )
+                return Response(status=status.HTTP_200_OK)
+            if session.order_id:
+                logger.info(
+                    "Razorpay webhook duplicate delivery for razorpay_order_id=%s: already processed",
+                    razorpay_order_id,
+                )
                 return Response(status=status.HTTP_200_OK)
 
             order = Order.objects.create(
