@@ -41,7 +41,9 @@ export default function ProductDetail() {
       setTimeout(() => setStatus("idle"), 1500);
     } catch (error) {
       setStatus("error");
-      setCartError(error.response?.data?.quantity?.[0] || "Couldn't add this to your cart — please try again.");
+      const quantityError = error.response?.data?.quantity;
+      const message = Array.isArray(quantityError) ? quantityError[0] : quantityError;
+      setCartError(message || "Couldn't add this to your cart — please try again.");
     }
   };
 
