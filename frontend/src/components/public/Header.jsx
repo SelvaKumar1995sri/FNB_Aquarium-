@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
+import { useAdminNotifications } from "../../context/AdminNotificationsContext";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useCustomerAuth } from "../../context/CustomerAuthContext";
@@ -41,11 +42,28 @@ function CartIcon(props) {
   );
 }
 
+function BellIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path d="M6 9a6 6 0 1 1 12 0v5l1.5 3h-15L6 14V9Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const { isAuthenticated, isStaff, logout } = useAuth();
   const { isAuthenticated: isCustomerAuthenticated, profile, logout: customerLogout } = useCustomerAuth();
   const { itemCount } = useCart();
+  const { unreadOrdersCount, unreadInquiriesCount, latestOrders, latestInquiries, markSeen } = useAdminNotifications();
+
+  const totalUnread = unreadOrdersCount + unreadInquiriesCount;
+  const sidebarBadgeCounts = {
+    "/admin/orders": unreadOrdersCount,
+    "/admin/inquiries": unreadInquiriesCount,
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -55,6 +73,12 @@ export default function Header() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
+
+  const toggleNotifDropdown = () => {
+    const opening = !isNotifOpen;
+    setIsNotifOpen(opening);
+    if (opening && totalUnread > 0) markSeen();
+  };
 
   return (
     <>
@@ -122,6 +146,51 @@ export default function Header() {
               >
                 Login
               </Link>
+            )}
+            {isAuthenticated && isStaff && (
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label={`Notifications, ${totalUnread} unread`}
+                  className="relative p-2 hover:text-brand-aqua"
+                  onClick={toggleNotifDropdown}
+                >
+                  <BellIcon className="h-5 w-5" />
+                  {totalUnread > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
+                      {totalUnread > 9 ? "9+" : totalUnread}
+                    </span>
+                  )}
+                </button>
+                {isNotifOpen && (
+                  <div className="absolute right-0 mt-2 w-72 bg-white text-brand-dark rounded-lg shadow-xl border z-50 max-h-96 overflow-y-auto">
+                    <div className="p-3 border-b font-semibold text-sm">Notifications</div>
+                    {latestOrders.length === 0 && latestInquiries.length === 0 && (
+                      <p className="p-3 text-sm text-gray-500">No new notifications.</p>
+                    )}
+                    {latestOrders.map((order) => (
+                      <Link
+                        key={`order-${order.id}`}
+                        to={`/admin/orders/${order.id}`}
+                        onClick={() => setIsNotifOpen(false)}
+                        className="block p-3 text-sm border-b hover:bg-gray-50"
+                      >
+                        New order #{order.id} — {order.customer_name || order.customer_email}
+                      </Link>
+                    ))}
+                    {latestInquiries.map((inquiry) => (
+                      <Link
+                        key={`inquiry-${inquiry.id}`}
+                        to="/admin/inquiries"
+                        onClick={() => setIsNotifOpen(false)}
+                        className="block p-3 text-sm border-b hover:bg-gray-50"
+                      >
+                        New inquiry from {inquiry.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
             {isAuthenticated && isStaff ? (
               <button
@@ -221,9 +290,14 @@ export default function Header() {
                   key={link.to}
                   to={link.to}
                   onClick={() => setIsOpen(false)}
-                  className="px-2 py-2 rounded hover:bg-white/10 hover:text-brand-aqua"
+                  className="px-2 py-2 rounded hover:bg-white/10 hover:text-brand-aqua flex items-center justify-between"
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {sidebarBadgeCounts[link.to] > 0 && (
+                    <span className="bg-red-600 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
+                      {sidebarBadgeCounts[link.to] > 9 ? "9+" : sidebarBadgeCounts[link.to]}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </>
