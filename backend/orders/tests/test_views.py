@@ -201,3 +201,57 @@ class RazorpayWebhookViewTests(APITestCase):
         self.assertTrue(Order.objects.filter(razorpay_order_id="order_webhook_test").exists())
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock_quantity, 0)
+
+
+class OrderByRazorpayOrderViewTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="a@example.com", password="pw12345678")
+        self.other = User.objects.create_user(username="b@example.com", password="pw12345678")
+        login = self.client.post("/api/v1/auth/login/", {"username": "a@example.com", "password": "pw12345678"})
+        self.auth_header = {"HTTP_AUTHORIZATION": f"Bearer {login.json()['access']}"}
+        self.address = Address.objects.create(
+            user=self.user, full_name="A", phone="1234567890", line1="1 Rd",
+            city="City", state="State", pincode="500001",
+        )
+        self.category = Category.objects.create(name="Tanks", slug="tanks")
+        self.product = Product.objects.create(
+            name="Tank", slug="tank", category=self.category, price="100.00", stock_quantity=5,
+        )
+        self.order = Order.objects.create(
+            user=self.user, address=self.address, total_amount="200.00", razorpay_order_id="order_lookup_test",
+        )
+        OrderItem.objects.create(
+            order=self.order, product=self.product, product_name="Tank", unit_price="100.00", quantity=2,
+        )
+
+    def test_requires_authentication(self):
+        response = self.client.get("/api/v1/orders/by-razorpay-order/order_lookup_test/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_returns_order_and_items(self):
+        response = self.client.get(
+            "/api/v1/orders/by-razorpay-order/order_lookup_test/", **self.auth_header
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["id"], self.order.id)
+        self.assertEqual(data["status"], "placed")
+        self.assertEqual(data["total_amount"], "200.00")
+        self.assertEqual(len(data["items"]), 1)
+        self.assertEqual(data["items"][0]["product_name"], "Tank")
+
+    def test_returns_404_before_the_order_exists(self):
+        response = self.client.get(
+            "/api/v1/orders/by-razorpay-order/order_not_created_yet/", **self.auth_header
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_returns_404_for_another_users_order(self):
+        login = self.client.post("/api/v1/auth/login/", {"username": "b@example.com", "password": "pw12345678"})
+        other_auth_header = {"HTTP_AUTHORIZATION": f"Bearer {login.json()['access']}"}
+
+        response = self.client.get(
+            "/api/v1/orders/by-razorpay-order/order_lookup_test/", **other_auth_header
+        )
+        self.assertEqual(response.status_code, 404)

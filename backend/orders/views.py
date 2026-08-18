@@ -15,6 +15,7 @@ from razorpay.errors import SignatureVerificationError
 
 from .models import CheckoutSession, Order, OrderItem
 from .razorpay_client import get_razorpay_client
+from .serializers import OrderSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -151,3 +152,17 @@ class RazorpayWebhookView(APIView):
             CartItem.objects.filter(cart__user=session.user).delete()
 
         return Response(status=status.HTTP_200_OK)
+
+
+class OrderByRazorpayOrderView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, razorpay_order_id):
+        order = (
+            Order.objects.filter(razorpay_order_id=razorpay_order_id, user=request.user)
+            .prefetch_related("items")
+            .first()
+        )
+        if not order:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(OrderSerializer(order).data)
