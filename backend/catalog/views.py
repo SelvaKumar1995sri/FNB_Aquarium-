@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.db.models import F, Q
 
 from rest_framework import status, viewsets
@@ -44,24 +45,46 @@ class ProductViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
         return queryset
 
+    def _find_duplicate(self, name, category_id):
+        try:
+            category_id = int(category_id)
+        except (TypeError, ValueError):
+            return None
+        return Product.objects.filter(name__iexact=name, category_id=category_id).select_related("category").first()
+
+    def _duplicate_response(self, existing):
+        return Response(
+            {
+                "detail": f'A product named "{existing.name}" already exists in this category.',
+                "existing_product": {
+                    "slug": existing.slug,
+                    "name": existing.name,
+                    "category_name": existing.category.name,
+                    "stock_quantity": existing.stock_quantity,
+                },
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
+
     def create(self, request, *args, **kwargs):
         name = request.data.get("name")
         category_id = request.data.get("category")
-        existing = Product.objects.filter(name__iexact=name, category_id=category_id).select_related("category").first()
+
+        existing = self._find_duplicate(name, category_id)
         if existing:
-            return Response(
-                {
-                    "detail": f'A product named "{existing.name}" already exists in this category.',
-                    "existing_product": {
-                        "slug": existing.slug,
-                        "name": existing.name,
-                        "category_name": existing.category.name,
-                        "stock_quantity": existing.stock_quantity,
-                    },
-                },
-                status=status.HTTP_409_CONFLICT,
-            )
-        return super().create(request, *args, **kwargs)
+            return self._duplicate_response(existing)
+
+        try:
+            return super().create(request, *args, **kwargs)
+        except IntegrityError:
+            # Two near-simultaneous creates can both pass the check above; the
+            # DB-level unique_product_name_per_category_ci constraint is the
+            # real backstop, and this converts that race into the same 409
+            # response instead of a raw 500.
+            existing = self._find_duplicate(name, category_id)
+            if existing:
+                return self._duplicate_response(existing)
+            raise
 
     @action(detail=True, methods=["post"], url_path="add-stock")
     def add_stock(self, request, slug=None):

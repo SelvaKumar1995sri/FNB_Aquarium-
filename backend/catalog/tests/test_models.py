@@ -1,3 +1,4 @@
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 
 from catalog.models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
@@ -27,6 +28,25 @@ class ProductModelTests(TestCase):
         self.assertEqual(str(product), "60cm Rimless Tank")
         self.assertFalse(product.in_stock)
         self.assertFalse(product.is_featured)
+
+
+class ProductUniqueNamePerCategoryConstraintTests(TestCase):
+    def test_duplicate_name_in_same_category_is_rejected_case_insensitively_at_db_level(self):
+        category = Category.objects.create(name="Fish", slug="fish")
+        Product.objects.create(name="Discus", slug="discus", category=category, price=1200)
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Product.objects.create(name="DISCUS", slug="discus-2", category=category, price=1300)
+
+    def test_same_name_in_different_categories_is_allowed(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        plants = Category.objects.create(name="Plants", slug="plants")
+        Product.objects.create(name="Discus", slug="discus", category=fish, price=1200)
+
+        product = Product.objects.create(name="Discus", slug="discus-plants", category=plants, price=1300)
+
+        self.assertIsNotNone(product.pk)
 
 
 class ProductImageModelTests(TestCase):

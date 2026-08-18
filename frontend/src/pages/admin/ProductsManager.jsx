@@ -89,6 +89,12 @@ export default function ProductsManager() {
       if (!editingSlug && error.response?.status === 409) {
         const existing = error.response.data.existing_product;
         const enteredQuantity = payload.stock_quantity;
+        if (enteredQuantity <= 0) {
+          setFormError(
+            `A product named "${existing.name}" already exists in ${existing.category_name}. Enter a positive stock quantity to add to its existing ${existing.stock_quantity} in stock.`
+          );
+          return;
+        }
         const confirmed = window.confirm(
           `A product named "${existing.name}" already exists in ${existing.category_name} with ${existing.stock_quantity} in stock. Add ${enteredQuantity} more to make ${existing.stock_quantity + enteredQuantity}?`
         );

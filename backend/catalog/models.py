@@ -1,6 +1,7 @@
 import re
 
 from django.db import models
+from django.db.models.functions import Lower
 
 
 class Category(models.Model):
@@ -34,6 +35,9 @@ class Product(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(Lower("name"), "category", name="unique_product_name_per_category_ci"),
+        ]
 
     def __str__(self):
         return self.name

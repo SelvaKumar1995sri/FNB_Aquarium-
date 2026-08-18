@@ -327,6 +327,14 @@ class ProductCreateDuplicateDetectionTests(APITestCase):
 
         self.assertEqual(response.status_code, 201)
 
+    def test_non_numeric_category_returns_400_not_500(self):
+        response = self.client.post("/api/v1/products/", {
+            "name": "Discus", "slug": "discus", "category": "not-a-number",
+            "price": 1200, "stock_quantity": 5,
+        })
+
+        self.assertEqual(response.status_code, 400)
+
     def test_editing_an_existing_product_to_share_a_name_is_not_blocked(self):
         Product.objects.create(
             name="Discus", slug="discus", category=self.category, price=1200, stock_quantity=5,
