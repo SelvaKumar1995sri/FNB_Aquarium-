@@ -19,6 +19,7 @@ const ADMIN_LINKS = [
   { to: "/admin/products", label: "Products" },
   { to: "/admin/videos", label: "Videos" },
   { to: "/admin/inquiries", label: "Inquiries" },
+  { to: "/admin/orders", label: "Orders" },
 ];
 
 function SearchIcon(props) {
