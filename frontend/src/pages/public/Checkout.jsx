@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { customerApiClient } from "../../api/customerClient";
 import { describeError } from "../../api/describeError";
@@ -20,7 +20,7 @@ function loadRazorpayScript() {
 }
 
 export default function Checkout() {
-  const { cart } = useCart();
+  const { cart, isLoading } = useCart();
   const navigate = useNavigate();
   const [addresses, setAddresses] = useState([]);
   const [addressesError, setAddressesError] = useState(false);
@@ -76,11 +76,16 @@ export default function Checkout() {
     }
   };
 
+  if (isLoading && cart.items.length === 0) {
+    return <div className="p-8">Loading your cart...</div>;
+  }
+
   if (cart.items.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-semibold text-brand-dark mb-3">Your cart is empty</h1>
         <p className="text-gray-500 mb-6">Add something to your cart before checking out.</p>
+        <Link to="/products" className="text-brand-forest hover:underline">Browse products</Link>
       </div>
     );
   }

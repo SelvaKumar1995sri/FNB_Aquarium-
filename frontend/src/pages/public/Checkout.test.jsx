@@ -16,8 +16,9 @@ vi.mock("react-router-dom", async () => {
 });
 
 let mockCart;
+let mockIsLoading;
 vi.mock("../../context/CartContext", () => ({
-  useCart: () => ({ cart: mockCart }),
+  useCart: () => ({ cart: mockCart, isLoading: mockIsLoading }),
 }));
 
 const ADDRESSES = [
@@ -42,6 +43,7 @@ describe("Checkout", () => {
       items: [{ id: 1, product_name: "Tank", quantity: 2, line_total: "200.00" }],
       subtotal: "200.00",
     };
+    mockIsLoading = false;
     delete window.Razorpay;
   });
 
@@ -56,6 +58,17 @@ describe("Checkout", () => {
     renderCheckout();
 
     expect(screen.getByText("Your cart is empty")).toBeTruthy();
+  });
+
+  it("shows a loading message instead of the empty-cart message while the cart is still loading", () => {
+    mockCart = { items: [], subtotal: "0.00" };
+    mockIsLoading = true;
+    customerApiClient.get.mockResolvedValueOnce({ data: { results: [] } });
+
+    renderCheckout();
+
+    expect(screen.getByText("Loading your cart...")).toBeTruthy();
+    expect(screen.queryByText("Your cart is empty")).toBeNull();
   });
 
   it("loads and pre-selects the default address", async () => {

@@ -67,6 +67,6 @@ class AddressViewSet(viewsets.ModelViewSet):
             return super().destroy(request, *args, **kwargs)
         except ProtectedError:
             return Response(
-                {"detail": "This address is used in a past order and can't be deleted."},
+                {"detail": "This address is used by an order or an in-progress checkout and can't be deleted."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
