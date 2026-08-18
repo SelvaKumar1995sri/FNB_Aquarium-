@@ -26,7 +26,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         return request.build_absolute_uri(image.image.url) if request else image.image.url
 
     def get_line_total(self, obj):
-        return str(obj.product.price * obj.quantity)
+        return f"{obj.product.price * obj.quantity:.2f}"
 
 
 class CartSerializer(serializers.ModelSerializer):
