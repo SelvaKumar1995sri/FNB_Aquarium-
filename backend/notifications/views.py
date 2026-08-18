@@ -69,7 +69,10 @@ class AdminNotificationsSeenView(APIView):
         seen_up_to = None
         raw = request.data.get("seen_up_to")
         if isinstance(raw, str):
-            parsed = parse_datetime(raw)
+            try:
+                parsed = parse_datetime(raw)
+            except (ValueError, TypeError):
+                parsed = None
             if parsed is not None and timezone.is_aware(parsed) and parsed <= now:
                 seen_up_to = parsed
         if seen_up_to is None:

@@ -152,3 +152,17 @@ class AdminNotificationsViewTests(APITestCase):
 
         response = self.client.get("/api/v1/admin/notifications/")
         self.assertEqual(response.json()["unread_orders_count"], 0)
+
+    def test_seen_falls_back_to_now_for_a_semantically_invalid_but_regex_matching_seen_up_to(self):
+        self.client.force_authenticate(user=self.staff)
+        Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_before_seen_2",
+        )
+
+        seen_response = self.client.post(
+            "/api/v1/admin/notifications/seen/", {"seen_up_to": "2026-13-45T25:99:99Z"}, format="json"
+        )
+        self.assertEqual(seen_response.status_code, 204)
+
+        response = self.client.get("/api/v1/admin/notifications/")
+        self.assertEqual(response.json()["unread_orders_count"], 0)
