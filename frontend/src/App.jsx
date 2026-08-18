@@ -20,6 +20,7 @@ import CustomTankBuild from "./pages/public/CustomTankBuild";
 import CustomerLogin from "./pages/public/CustomerLogin";
 import Home from "./pages/public/Home";
 import NotFound from "./pages/public/NotFound";
+import OrderConfirmation from "./pages/public/OrderConfirmation";
 import Portfolio from "./pages/public/Portfolio";
 import ProductDetail from "./pages/public/ProductDetail";
 import Register from "./pages/public/Register";
@@ -58,6 +59,9 @@ export default function App() {
           </Route>
           <Route path="/checkout" element={<CustomerGuard />}>
             <Route index element={<Checkout />} />
+          </Route>
+          <Route path="/order-confirmation/:razorpayOrderId" element={<CustomerGuard />}>
+            <Route index element={<OrderConfirmation />} />
           </Route>
           <Route path="/admin" element={<AdminGuard />}>
             <Route index element={<Navigate to="/admin/categories" replace />} />
