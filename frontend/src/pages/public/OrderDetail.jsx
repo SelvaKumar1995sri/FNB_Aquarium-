@@ -58,17 +58,21 @@ export default function OrderDetail() {
 
       <div className="border rounded-xl p-4 bg-white shadow-sm mb-6">
         <h2 className="font-medium text-brand-dark mb-2">Delivery address</h2>
-        <p className="text-sm text-gray-700">
-          {order.address.full_name} — {order.address.phone}
-          <br />
-          {order.address.line1}{order.address.line2 && `, ${order.address.line2}`}, {order.address.city}, {order.address.state} {order.address.pincode}
-        </p>
+        {order.address ? (
+          <p className="text-sm text-gray-700">
+            {order.address.full_name} — {order.address.phone}
+            <br />
+            {order.address.line1}{order.address.line2 && `, ${order.address.line2}`}, {order.address.city}, {order.address.state} {order.address.pincode}
+          </p>
+        ) : (
+          <p className="text-sm text-gray-700">Address unavailable</p>
+        )}
       </div>
 
       <div className="border rounded-xl p-4 bg-white shadow-sm">
         <h2 className="font-medium text-brand-dark mb-3">Items</h2>
         <div className="grid gap-2 mb-3">
-          {order.items.map((item) => (
+          {(order.items || []).map((item) => (
             <div key={item.id} className="flex justify-between text-sm">
               <span>{item.product_name} × {item.quantity}</span>
               <span>₹{(Number(item.unit_price) * item.quantity).toFixed(2)}</span>
