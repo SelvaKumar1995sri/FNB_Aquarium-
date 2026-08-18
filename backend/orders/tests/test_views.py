@@ -338,3 +338,198 @@ class OrderViewSetTests(APITestCase):
         response = self.client.get(f"/api/v1/orders/{theirs.id}/", **self.auth_header)
 
         self.assertEqual(response.status_code, 404)
+
+
+class AdminOrderViewSetTests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(username="staff@example.com", password="pw12345678", is_staff=True)
+        self.customer = User.objects.create_user(
+            username="a@example.com", password="pw12345678", first_name="Asha", email="a@example.com",
+        )
+        self.address = Address.objects.create(
+            user=self.customer, full_name="Asha", phone="1234567890", line1="1 Rd",
+            city="City", state="State", pincode="500001",
+        )
+
+    def test_anonymous_cannot_list_admin_orders(self):
+        response = self.client.get("/api/v1/admin/orders/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_non_staff_cannot_list_admin_orders(self):
+        self.client.force_authenticate(user=self.customer)
+        response = self.client.get("/api/v1/admin/orders/")
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_can_list_all_orders(self):
+        Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_1",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.get("/api/v1/admin/orders/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+
+    def test_staff_can_filter_orders_by_status(self):
+        Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_placed", status="placed",
+        )
+        Order.objects.create(
+            user=self.customer, address=self.address, total_amount="150.00",
+            razorpay_order_id="order_packed", status="packed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.get("/api/v1/admin/orders/", {"status": "packed"})
+
+        results = response.json()["results"]
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["razorpay_order_id"], "order_packed")
+
+    def test_staff_can_retrieve_order_detail(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_detail",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.get(f"/api/v1/admin/orders/{order.id}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["customer_email"], "a@example.com")
+
+    def test_staff_can_move_order_from_placed_to_packed(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_transition",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "packed"})
+
+        self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        self.assertEqual(order.status, "packed")
+
+    def test_rejects_skipping_a_status(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_skip",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "delivered"})
+
+        self.assertEqual(response.status_code, 400)
+        order.refresh_from_db()
+        self.assertEqual(order.status, "placed")
+
+    def test_rejects_moving_backward(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_backward", status="packed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "placed"})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_can_cancel_from_placed(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_cancel_placed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "cancelled"})
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_cannot_cancel_from_transported(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_cancel_transported", status="transported",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "cancelled"})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_moving_to_transported_requires_tracking_info(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_transported_missing", status="packed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "transported"})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_moving_to_transported_rejects_both_porter_and_courier(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_both", status="packed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {
+            "status": "transported",
+            "porter_name": "Ravi", "porter_phone": "9999999999",
+            "courier_name": "BlueDart", "courier_tracking_number": "BD123",
+        })
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_moving_to_transported_rejects_partial_porter_info(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_partial", status="packed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {
+            "status": "transported", "porter_name": "Ravi",
+        })
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_moving_to_transported_with_porter_info_succeeds(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_porter_ok", status="packed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {
+            "status": "transported", "porter_name": "Ravi", "porter_phone": "9999999999",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        self.assertEqual(order.status, "transported")
+        self.assertEqual(order.porter_name, "Ravi")
+
+    def test_moving_to_transported_with_courier_info_succeeds(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_courier_ok", status="packed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {
+            "status": "transported", "courier_name": "BlueDart", "courier_tracking_number": "BD123",
+        })
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_moving_to_delivered_after_transported(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00", razorpay_order_id="order_delivered",
+            status="transported", courier_name="BlueDart", courier_tracking_number="BD123",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "delivered"})
+
+        self.assertEqual(response.status_code, 200)

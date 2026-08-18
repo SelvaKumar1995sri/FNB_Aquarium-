@@ -1,10 +1,11 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import CheckoutView, OrderByRazorpayOrderView, OrderViewSet, RazorpayWebhookView
+from .views import AdminOrderViewSet, CheckoutView, OrderByRazorpayOrderView, OrderViewSet, RazorpayWebhookView
 
 router = DefaultRouter()
 router.register("orders", OrderViewSet, basename="order")
+router.register("admin/orders", AdminOrderViewSet, basename="admin-order")
 
 urlpatterns = [
     path("checkout/", CheckoutView.as_view(), name="checkout"),

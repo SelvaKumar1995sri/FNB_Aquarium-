@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import transaction
 from rest_framework import permissions, serializers, status, viewsets
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,7 +16,7 @@ from razorpay.errors import SignatureVerificationError
 
 from .models import CheckoutSession, Order, OrderItem
 from .razorpay_client import get_razorpay_client
-from .serializers import OrderSerializer
+from .serializers import AdminOrderStatusUpdateSerializer, OrderSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -178,3 +179,23 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
             .select_related("address", "user")
             .prefetch_related("items")
         )
+
+
+class AdminOrderViewSet(viewsets.ModelViewSet):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAdminUser]
+    http_method_names = ["get", "patch"]
+
+    def get_queryset(self):
+        queryset = Order.objects.select_related("address", "user").prefetch_related("items")
+        status_param = self.request.query_params.get("status")
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        return queryset
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = AdminOrderStatusUpdateSerializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(OrderSerializer(instance, context={"request": request}).data)
