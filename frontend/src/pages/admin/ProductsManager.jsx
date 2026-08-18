@@ -86,6 +86,23 @@ export default function ProductsManager() {
       resetForm();
       load();
     } catch (error) {
+      if (!editingSlug && error.response?.status === 409) {
+        const existing = error.response.data.existing_product;
+        const enteredQuantity = payload.stock_quantity;
+        const confirmed = window.confirm(
+          `A product named "${existing.name}" already exists in ${existing.category_name} with ${existing.stock_quantity} in stock. Add ${enteredQuantity} more to make ${existing.stock_quantity + enteredQuantity}?`
+        );
+        if (confirmed) {
+          try {
+            await apiClient.post(`/products/${existing.slug}/add-stock/`, { quantity: enteredQuantity });
+            resetForm();
+            load();
+          } catch (addStockError) {
+            setFormError(describeError(addStockError, "Couldn't add stock to the existing product — please try again."));
+          }
+        }
+        return;
+      }
       setFormError(describeError(error, "Couldn't save the product — please check the fields and try again."));
     }
   };

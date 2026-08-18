@@ -42,6 +42,7 @@ export default function ProductCard({ product }) {
       )}
       <h3 className="font-semibold text-sm sm:text-base">{product.name}</h3>
       <p className="text-xs sm:text-sm text-gray-600">₹{product.price}</p>
+      {product.in_stock && <p className="text-xs text-gray-500">{product.stock_quantity} in stock</p>}
       <div className="mt-auto pt-2">
         {product.in_stock ? (
           <button
