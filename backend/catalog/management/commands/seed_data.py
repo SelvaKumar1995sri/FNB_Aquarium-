@@ -16,16 +16,18 @@ class Command(BaseCommand):
 
         Product.objects.get_or_create(
             slug="red-discus",
-            defaults={"name": "Red Discus", "category": fish, "price": 1500, "description": "Vibrant red discus, 3 inch."},
+            defaults={"name": "Red Discus", "category": fish, "price": 1500,
+                      "description": "Vibrant red discus, 3 inch.", "stock_quantity": 20},
         )
         Product.objects.get_or_create(
             slug="anubias-nana",
-            defaults={"name": "Anubias Nana", "category": plants, "price": 250, "description": "Hardy low-light aquarium plant."},
+            defaults={"name": "Anubias Nana", "category": plants, "price": 250,
+                      "description": "Hardy low-light aquarium plant.", "stock_quantity": 30},
         )
         Product.objects.get_or_create(
             slug="60cm-rimless-tank",
             defaults={"name": "60cm Rimless Tank", "category": tanks, "price": 4500, "is_featured": True,
-                      "description": "Ultra-clear 60cm rimless glass tank."},
+                      "description": "Ultra-clear 60cm rimless glass tank.", "stock_quantity": 5},
         )
 
         if not PortfolioItem.objects.filter(title="Living Room Reef Tank").exists():

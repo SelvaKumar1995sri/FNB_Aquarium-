@@ -14,7 +14,7 @@ export default function ProductsManager() {
     category: "",
     price: "",
     description: "",
-    in_stock: true,
+    stock_quantity: 0,
     is_featured: false,
   });
   const [editingSlug, setEditingSlug] = useState(null);
@@ -48,7 +48,7 @@ export default function ProductsManager() {
       category: "",
       price: "",
       description: "",
-      in_stock: true,
+      stock_quantity: 0,
       is_featured: false,
     });
     setEditingSlug(null);
@@ -62,7 +62,7 @@ export default function ProductsManager() {
       category: product.category ? String(product.category) : "",
       price: String(product.price),
       description: product.description || "",
-      in_stock: product.in_stock,
+      stock_quantity: product.stock_quantity,
       is_featured: product.is_featured,
     });
     setEditingSlug(product.slug);
@@ -71,7 +71,12 @@ export default function ProductsManager() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const payload = { ...form, category: Number(form.category), price: Number(form.price) };
+    const payload = {
+      ...form,
+      category: Number(form.category),
+      price: Number(form.price),
+      stock_quantity: Number(form.stock_quantity),
+    };
     try {
       if (editingSlug) {
         await apiClient.patch(`/products/${editingSlug}/`, payload);
@@ -141,9 +146,17 @@ export default function ProductsManager() {
         </select>
         <input required type="number" placeholder="Price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="border rounded px-3 py-2" />
         <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="border rounded px-3 py-2" />
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={form.in_stock} onChange={(e) => setForm({ ...form, in_stock: e.target.checked })} />
-          In stock
+        <label className="flex flex-col text-sm text-gray-600">
+          Stock quantity
+          <input
+            required
+            type="number"
+            min="0"
+            placeholder="Stock quantity"
+            value={form.stock_quantity}
+            onChange={(e) => setForm({ ...form, stock_quantity: e.target.value })}
+            className="border rounded px-3 py-2"
+          />
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={form.is_featured} onChange={(e) => setForm({ ...form, is_featured: e.target.checked })} />
@@ -165,12 +178,13 @@ export default function ProductsManager() {
         <p className="text-red-600">Couldn't load products — please try again later.</p>
       )}
       <table className="w-full text-left">
-        <thead><tr><th>Name</th><th>Price</th><th>Images</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Price</th><th>Stock</th><th>Images</th><th></th></tr></thead>
         <tbody>
           {products.map((product) => (
             <tr key={product.id} className="border-t">
               <td>{product.name}</td>
               <td>₹{product.price}</td>
+              <td>{product.stock_quantity}{!product.in_stock && <span className="text-red-600 ml-1">(out of stock)</span>}</td>
               <td>
                 <div className="flex gap-1 mb-1">
                   {product.images.map((img) => (

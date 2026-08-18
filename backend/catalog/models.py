@@ -28,7 +28,7 @@ class Product(models.Model):
     category = models.ForeignKey(Category, related_name="products", on_delete=models.CASCADE)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    in_stock = models.BooleanField(default=True)
+    stock_quantity = models.PositiveIntegerField(default=0)
     is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -37,6 +37,10 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def in_stock(self):
+        return self.stock_quantity > 0
 
 
 class ProductImage(models.Model):

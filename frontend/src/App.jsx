@@ -12,6 +12,7 @@ import VideosManager from "./pages/admin/VideosManager";
 import About from "./pages/public/About";
 import AccountAddresses from "./pages/public/AccountAddresses";
 import Blog from "./pages/public/Blog";
+import Cart from "./pages/public/Cart";
 import CategoryProducts from "./pages/public/CategoryProducts";
 import Contact from "./pages/public/Contact";
 import CustomTankBuild from "./pages/public/CustomTankBuild";
@@ -50,6 +51,9 @@ export default function App() {
           <Route path="/account" element={<CustomerGuard />}>
             <Route index element={<Navigate to="/account/addresses" replace />} />
             <Route path="addresses" element={<AccountAddresses />} />
+          </Route>
+          <Route path="/cart" element={<CustomerGuard />}>
+            <Route index element={<Cart />} />
           </Route>
           <Route path="/admin" element={<AdminGuard />}>
             <Route index element={<Navigate to="/admin/categories" replace />} />

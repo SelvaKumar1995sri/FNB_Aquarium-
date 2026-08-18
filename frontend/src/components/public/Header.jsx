@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
+import { useCart } from "../../context/CartContext";
 import { useCustomerAuth } from "../../context/CustomerAuthContext";
 
 const NAV_LINKS = [
@@ -29,10 +30,21 @@ function SearchIcon(props) {
   );
 }
 
+function CartIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path d="M4 4h2l2.4 12h9.2L20 8H7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="10" cy="20" r="1.4" fill="currentColor" />
+      <circle cx="17" cy="20" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, isStaff, logout } = useAuth();
   const { isAuthenticated: isCustomerAuthenticated, profile, logout: customerLogout } = useCustomerAuth();
+  const { itemCount } = useCart();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -70,6 +82,20 @@ export default function Header() {
             <Link to="/search" aria-label="Search" className="p-2 hover:text-brand-aqua">
               <SearchIcon className="h-5 w-5" />
             </Link>
+            {isCustomerAuthenticated && (
+              <Link
+                to="/cart"
+                aria-label={`Cart, ${itemCount} item${itemCount === 1 ? "" : "s"}`}
+                className="relative p-2 hover:text-brand-aqua"
+              >
+                <CartIcon className="h-5 w-5" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-brand-aqua text-brand-dark text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
+                    {itemCount > 9 ? "9+" : itemCount}
+                  </span>
+                )}
+              </Link>
+            )}
             {isCustomerAuthenticated ? (
               <>
                 <Link
@@ -168,6 +194,13 @@ export default function Header() {
                 className="px-2 py-2 rounded hover:bg-white/10 hover:text-brand-aqua"
               >
                 My Account
+              </NavLink>
+              <NavLink
+                to="/cart"
+                onClick={() => setIsOpen(false)}
+                className="px-2 py-2 rounded hover:bg-white/10 hover:text-brand-aqua"
+              >
+                Cart{itemCount > 0 ? ` (${itemCount})` : ""}
               </NavLink>
             </>
           )}
