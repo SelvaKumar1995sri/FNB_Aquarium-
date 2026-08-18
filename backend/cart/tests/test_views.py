@@ -114,3 +114,31 @@ class AddCartItemViewTests(APITestCase):
             "/api/v1/cart/items/", {"product": out_of_stock.id, "quantity": 1}, **self.auth_header
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_rejects_non_numeric_quantity(self):
+        response = self.client.post(
+            "/api/v1/cart/items/", {"product": self.product.id, "quantity": "abc"}, **self.auth_header
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("quantity", response.json())
+
+    def test_rejects_null_quantity(self):
+        response = self.client.post(
+            "/api/v1/cart/items/", {"product": self.product.id, "quantity": None}, **self.auth_header, format="json"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("quantity", response.json())
+
+    def test_rejects_negative_quantity(self):
+        response = self.client.post(
+            "/api/v1/cart/items/", {"product": self.product.id, "quantity": -1}, **self.auth_header
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("quantity", response.json())
+
+    def test_rejects_zero_quantity(self):
+        response = self.client.post(
+            "/api/v1/cart/items/", {"product": self.product.id, "quantity": 0}, **self.auth_header
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("quantity", response.json())

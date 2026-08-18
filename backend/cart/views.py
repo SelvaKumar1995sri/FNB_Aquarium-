@@ -11,6 +11,11 @@ from .serializers import CartSerializer
 EMPTY_CART = {"id": None, "items": [], "subtotal": "0.00"}
 
 
+class AddCartItemInputSerializer(serializers.Serializer):
+    product = serializers.IntegerField(required=True)
+    quantity = serializers.IntegerField(min_value=1, required=False, default=1)
+
+
 class CartDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -27,8 +32,12 @@ class AddCartItemView(APIView):
 
     @transaction.atomic
     def post(self, request):
-        product_id = request.data.get("product")
-        quantity = int(request.data.get("quantity", 1))
+        # Validate input format
+        input_serializer = AddCartItemInputSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+
+        product_id = input_serializer.validated_data["product"]
+        quantity = input_serializer.validated_data["quantity"]
 
         try:
             product = Product.objects.get(pk=product_id)
