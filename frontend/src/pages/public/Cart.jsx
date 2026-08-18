@@ -122,8 +122,14 @@ export default function Cart() {
           );
         })}
       </div>
-      <div className="flex justify-end items-center gap-4 border-t pt-4">
+      <div className="flex justify-between items-center gap-4 border-t pt-4">
         <span className="text-lg font-semibold text-brand-dark">Subtotal: ₹{cart.subtotal}</span>
+        <Link
+          to="/checkout"
+          className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded-lg px-6 py-2.5 font-medium transition-colors"
+        >
+          Proceed to Checkout
+        </Link>
       </div>
     </div>
   );

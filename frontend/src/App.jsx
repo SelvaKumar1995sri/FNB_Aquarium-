@@ -14,6 +14,7 @@ import AccountAddresses from "./pages/public/AccountAddresses";
 import Blog from "./pages/public/Blog";
 import Cart from "./pages/public/Cart";
 import CategoryProducts from "./pages/public/CategoryProducts";
+import Checkout from "./pages/public/Checkout";
 import Contact from "./pages/public/Contact";
 import CustomTankBuild from "./pages/public/CustomTankBuild";
 import CustomerLogin from "./pages/public/CustomerLogin";
@@ -54,6 +55,9 @@ export default function App() {
           </Route>
           <Route path="/cart" element={<CustomerGuard />}>
             <Route index element={<Cart />} />
+          </Route>
+          <Route path="/checkout" element={<CustomerGuard />}>
+            <Route index element={<Checkout />} />
           </Route>
           <Route path="/admin" element={<AdminGuard />}>
             <Route index element={<Navigate to="/admin/categories" replace />} />
