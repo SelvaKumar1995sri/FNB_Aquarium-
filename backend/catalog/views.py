@@ -1,7 +1,9 @@
-from django.db.models import Q
+from django.db.models import F, Q
 
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.response import Response
 
 from .models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
 from .permissions import IsStaffOrReadOnly
@@ -41,6 +43,40 @@ class ProductViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        name = request.data.get("name")
+        category_id = request.data.get("category")
+        existing = Product.objects.filter(name__iexact=name, category_id=category_id).select_related("category").first()
+        if existing:
+            return Response(
+                {
+                    "detail": f'A product named "{existing.name}" already exists in this category.',
+                    "existing_product": {
+                        "slug": existing.slug,
+                        "name": existing.name,
+                        "category_name": existing.category.name,
+                        "stock_quantity": existing.stock_quantity,
+                    },
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        return super().create(request, *args, **kwargs)
+
+    @action(detail=True, methods=["post"], url_path="add-stock")
+    def add_stock(self, request, slug=None):
+        product = self.get_object()
+        quantity = request.data.get("quantity")
+        try:
+            quantity = int(quantity)
+        except (TypeError, ValueError):
+            return Response({"quantity": "Quantity must be a positive integer."}, status=status.HTTP_400_BAD_REQUEST)
+        if quantity <= 0:
+            return Response({"quantity": "Quantity must be a positive integer."}, status=status.HTTP_400_BAD_REQUEST)
+
+        Product.objects.filter(pk=product.pk).update(stock_quantity=F("stock_quantity") + quantity)
+        product.refresh_from_db()
+        return Response(ProductSerializer(product, context={"request": request}).data)
 
 
 class PortfolioItemViewSet(viewsets.ReadOnlyModelViewSet):

@@ -255,6 +255,149 @@ class CategoryWritePermissionTests(APITestCase):
         self.assertTrue(Category.objects.filter(slug="fish").exists())
 
 
+class ProductCreateDuplicateDetectionTests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(username="dup-staff", password="pw12345", is_staff=True)
+        self.client.force_authenticate(user=self.staff)
+        self.category = Category.objects.create(name="Fish", slug="fish")
+
+    def test_creating_a_product_with_a_new_name_succeeds_normally(self):
+        response = self.client.post("/api/v1/products/", {
+            "name": "Discus", "slug": "discus", "category": self.category.id,
+            "price": 1200, "stock_quantity": 5,
+        })
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(Product.objects.filter(slug="discus").exists())
+
+    def test_creating_a_product_matching_an_existing_name_and_category_is_rejected(self):
+        Product.objects.create(
+            name="Discus", slug="discus", category=self.category, price=1200, stock_quantity=5,
+        )
+
+        response = self.client.post("/api/v1/products/", {
+            "name": "Discus", "slug": "discus-2", "category": self.category.id,
+            "price": 1300, "stock_quantity": 10,
+        })
+
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(Product.objects.filter(slug="discus-2").exists())
+        self.assertEqual(Product.objects.filter(name="Discus").count(), 1)
+
+    def test_duplicate_match_response_includes_existing_product_details(self):
+        Product.objects.create(
+            name="Discus", slug="discus", category=self.category, price=1200, stock_quantity=5,
+        )
+
+        response = self.client.post("/api/v1/products/", {
+            "name": "Discus", "slug": "discus-2", "category": self.category.id,
+            "price": 1300, "stock_quantity": 10,
+        })
+
+        data = response.json()
+        self.assertIn("existing_product", data)
+        self.assertEqual(data["existing_product"]["slug"], "discus")
+        self.assertEqual(data["existing_product"]["name"], "Discus")
+        self.assertEqual(data["existing_product"]["category_name"], "Fish")
+        self.assertEqual(data["existing_product"]["stock_quantity"], 5)
+        self.assertIn("detail", data)
+
+    def test_name_match_is_case_insensitive(self):
+        Product.objects.create(
+            name="Discus", slug="discus", category=self.category, price=1200, stock_quantity=5,
+        )
+
+        response = self.client.post("/api/v1/products/", {
+            "name": "DISCUS", "slug": "discus-2", "category": self.category.id,
+            "price": 1300, "stock_quantity": 10,
+        })
+
+        self.assertEqual(response.status_code, 409)
+
+    def test_same_name_in_a_different_category_is_not_a_duplicate(self):
+        plants = Category.objects.create(name="Plants", slug="plants")
+        Product.objects.create(
+            name="Discus", slug="discus", category=self.category, price=1200, stock_quantity=5,
+        )
+
+        response = self.client.post("/api/v1/products/", {
+            "name": "Discus", "slug": "discus-plants", "category": plants.id,
+            "price": 1300, "stock_quantity": 10,
+        })
+
+        self.assertEqual(response.status_code, 201)
+
+    def test_editing_an_existing_product_to_share_a_name_is_not_blocked(self):
+        Product.objects.create(
+            name="Discus", slug="discus", category=self.category, price=1200, stock_quantity=5,
+        )
+        other = Product.objects.create(
+            name="Anubias", slug="anubias", category=self.category, price=300, stock_quantity=10,
+        )
+
+        response = self.client.patch(f"/api/v1/products/{other.slug}/", {"price": 350})
+
+        self.assertEqual(response.status_code, 200)
+
+
+class ProductAddStockActionTests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(username="stock-staff", password="pw12345", is_staff=True)
+        self.category = Category.objects.create(name="Fish", slug="fish")
+        self.product = Product.objects.create(
+            name="Discus", slug="discus", category=self.category, price=1200, stock_quantity=5,
+        )
+
+    def test_anonymous_cannot_add_stock(self):
+        response = self.client.post(f"/api/v1/products/{self.product.slug}/add-stock/", {"quantity": 10})
+        self.assertEqual(response.status_code, 401)
+
+    def test_non_staff_cannot_add_stock(self):
+        user = User.objects.create_user(username="stock-customer", password="pw12345")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(f"/api/v1/products/{self.product.slug}/add-stock/", {"quantity": 10})
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_can_add_stock(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.post(f"/api/v1/products/{self.product.slug}/add-stock/", {"quantity": 10})
+
+        self.assertEqual(response.status_code, 200)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock_quantity, 15)
+        self.assertEqual(response.json()["stock_quantity"], 15)
+
+    def test_rejects_zero_quantity(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.post(f"/api/v1/products/{self.product.slug}/add-stock/", {"quantity": 0})
+
+        self.assertEqual(response.status_code, 400)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock_quantity, 5)
+
+    def test_rejects_negative_quantity(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.post(f"/api/v1/products/{self.product.slug}/add-stock/", {"quantity": -3})
+
+        self.assertEqual(response.status_code, 400)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock_quantity, 5)
+
+    def test_rejects_non_numeric_quantity(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.post(f"/api/v1/products/{self.product.slug}/add-stock/", {"quantity": "abc"})
+
+        self.assertEqual(response.status_code, 400)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock_quantity, 5)
+
+
 class ProductImageWritePermissionTests(APITestCase):
     """
     ProductImageViewSet uses IsAdminUser (per task-5-brief.md Step 4 and the
