@@ -110,7 +110,7 @@ export default function Header() {
             <Link to="/search" aria-label="Search" className="p-2 hover:text-brand-aqua">
               <SearchIcon className="h-5 w-5" />
             </Link>
-            {isCustomerAuthenticated && (
+            {isAuthenticated && (
               <Link
                 to="/cart"
                 aria-label={`Cart, ${itemCount} item${itemCount === 1 ? "" : "s"}`}
@@ -239,7 +239,7 @@ export default function Header() {
               {link.label}
             </NavLink>
           ))}
-          {isCustomerAuthenticated && (
+          {isAuthenticated && (
             <>
               <hr className="border-white/10 my-2" />
               <span className="px-2 text-xs uppercase tracking-wide text-white/50">Account</span>

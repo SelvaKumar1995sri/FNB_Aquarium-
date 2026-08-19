@@ -123,6 +123,15 @@ export default function OrderDetailManager() {
           <span>Total</span>
           <span>₹{order.total_amount}</span>
         </div>
+        {order.payment_method === "cod" && (
+          <div className="text-sm text-amber-600 mt-1">
+            <div className="flex justify-between">
+              <span>Cash to collect on delivery</span>
+              <span>₹{order.cod_amount_due}</span>
+            </div>
+            <p>Plus the porter/delivery charge — add it when dispatching this order.</p>
+          </div>
+        )}
       </div>
 
       <div className="border rounded-lg p-4">

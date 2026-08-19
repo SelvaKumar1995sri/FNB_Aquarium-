@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
+import AddressForm from "../../components/public/AddressForm";
 import { useCart } from "../../context/CartContext";
 
 function loadRazorpayScript() {
@@ -25,25 +26,66 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState([]);
   const [addressesError, setAddressesError] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [addAddressError, setAddAddressError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("online");
   const [status, setStatus] = useState("idle"); // idle | paying | error
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const loadAddresses = () =>
     apiClient
       .get("/addresses/")
       .then((response) => {
         const results = response.data.results;
         setAddresses(results);
-        const defaultAddress = results.find((address) => address.is_default) || results[0];
-        if (defaultAddress) setSelectedAddressId(defaultAddress.id);
+        setAddressesError(false);
+        return results;
       })
-      .catch(() => setAddressesError(true));
+      .catch(() => {
+        setAddressesError(true);
+        return [];
+      });
+
+  useEffect(() => {
+    loadAddresses().then((results) => {
+      const defaultAddress = results.find((address) => address.is_default) || results[0];
+      if (defaultAddress) setSelectedAddressId(defaultAddress.id);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleAddAddress = async (values) => {
+    setIsSavingAddress(true);
+    setAddAddressError("");
+    try {
+      const response = await apiClient.post("/addresses/", values);
+      await loadAddresses();
+      setSelectedAddressId(response.data.id);
+      setIsAddingAddress(false);
+    } catch (err) {
+      setAddAddressError(describeError(err, "Couldn't save this address — please check the fields and try again."));
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
 
   const handlePayNow = async () => {
     setStatus("paying");
     setError("");
     try {
+      if (paymentMethod === "cod") {
+        // Cash on Delivery has no online charge — the order is placed
+        // immediately, and the porter/delivery charge is added in cash when
+        // the order is dispatched.
+        const response = await apiClient.post("/checkout/", {
+          address: selectedAddressId,
+          payment_method: "cod",
+        });
+        navigate(`/order-confirmation/${response.data.razorpay_order_id}`);
+        return;
+      }
+
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         setError("Couldn't load the payment window — please check your connection and try again.");
@@ -51,7 +93,10 @@ export default function Checkout() {
         return;
       }
 
-      const response = await apiClient.post("/checkout/", { address: selectedAddressId });
+      const response = await apiClient.post("/checkout/", {
+        address: selectedAddressId,
+        payment_method: "online",
+      });
       const { razorpay_order_id, razorpay_key_id, amount } = response.data;
 
       const razorpay = new window.Razorpay({
@@ -99,13 +144,10 @@ export default function Checkout() {
         {addressesError && (
           <p className="text-red-600 text-sm mb-2">Couldn't load your addresses — please try again later.</p>
         )}
-        {addresses.length === 0 && !addressesError && (
-          <p className="text-gray-500 text-sm">
-            You don't have any saved addresses yet.{" "}
-            <a href="/account/addresses" className="text-brand-forest hover:underline">Add one</a> before checking out.
-          </p>
+        {addresses.length === 0 && !addressesError && !isAddingAddress && (
+          <p className="text-gray-500 text-sm mb-3">You don't have any saved addresses yet — add one below.</p>
         )}
-        <div className="grid gap-2">
+        <div className="grid gap-2 mb-3">
           {addresses.map((address) => (
             <label key={address.id} className="border rounded-lg p-3 flex items-start gap-3 cursor-pointer">
               <input
@@ -123,6 +165,58 @@ export default function Checkout() {
             </label>
           ))}
         </div>
+        {isAddingAddress ? (
+          <AddressForm
+            title="Add a new address"
+            onSubmit={handleAddAddress}
+            onCancel={() => {
+              setIsAddingAddress(false);
+              setAddAddressError("");
+            }}
+            isSaving={isSavingAddress}
+            error={addAddressError}
+            submitLabel="Add address"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsAddingAddress(true)}
+            className="text-brand-forest hover:underline text-sm font-medium"
+          >
+            + Add a new address
+          </button>
+        )}
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-medium text-brand-dark mb-3">Payment method</h2>
+        <div className="grid gap-2">
+          <label className="border rounded-lg p-3 flex items-start gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="paymentMethod"
+              checked={paymentMethod === "online"}
+              onChange={() => setPaymentMethod("online")}
+              className="mt-1"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-brand-dark">Pay online</span> — card, UPI, netbanking via Razorpay
+            </span>
+          </label>
+          <label className="border rounded-lg p-3 flex items-start gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="paymentMethod"
+              checked={paymentMethod === "cod"}
+              onChange={() => setPaymentMethod("cod")}
+              className="mt-1"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-brand-dark">Cash on Delivery</span> — pay nothing now; delivery
+              charges will be added to your bill when the order is dispatched
+            </span>
+          </label>
+        </div>
       </section>
 
       <section className="mb-8">
@@ -139,6 +233,11 @@ export default function Checkout() {
           <span>Total</span>
           <span>₹{cart.subtotal}</span>
         </div>
+        {paymentMethod === "cod" && (
+          <p className="text-sm text-gray-600 mt-2">
+            Delivery charges will be added to this bill when your order is dispatched, and paid in cash on delivery.
+          </p>
+        )}
       </section>
 
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
@@ -149,7 +248,9 @@ export default function Checkout() {
         disabled={status === "paying" || !selectedAddressId}
         className="w-full bg-brand-forest hover:bg-brand-forest/90 disabled:opacity-60 text-white rounded-lg px-4 py-3 font-medium transition-colors"
       >
-        {status === "paying" ? "Opening payment window..." : "Pay Now"}
+        {status === "paying"
+          ? (paymentMethod === "cod" ? "Placing order..." : "Opening payment window...")
+          : (paymentMethod === "cod" ? "Place Order" : `Pay ₹${cart.subtotal} Now`)}
       </button>
     </div>
   );

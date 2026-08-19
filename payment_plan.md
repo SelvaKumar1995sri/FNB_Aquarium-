@@ -74,5 +74,13 @@ involve an in-person visit.
 - [ ] Get real Razorpay test-mode API keys and update `backend/.env`
       (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`)
 - [ ] Verify the existing Razorpay checkout flow end-to-end with test keys
-- [ ] Add a Cash on Delivery / Pay on Pickup option at checkout as a fallback
-      payment method
+- [x] Add a Cash on Delivery option at checkout — available for any order
+      value (no minimum). No online charge is collected for COD orders: the
+      order is placed immediately (bypassing Razorpay entirely), and the
+      porter/delivery charge (currently a flat ₹150 within Chennai) is
+      determined and added to the bill in cash when the order is dispatched,
+      not calculated at checkout time. Covered by backend
+      (`orders/tests/test_views.py`) and frontend (`Checkout.test.jsx`) tests.
+- [x] Add "change/add address at checkout" — customers can now add a new
+      address inline on the checkout page (shared `AddressForm` component)
+      instead of only picking from existing saved ones.

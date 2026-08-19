@@ -43,7 +43,14 @@ export default function OrderConfirmation({ pollIntervalMs = 1500, pollTimeoutMs
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-semibold text-brand-dark mb-3">Thank you for your order!</h1>
-        <p className="text-gray-600 mb-6">Order #{order.id} — ₹{order.total_amount}</p>
+        <div className="mb-6">
+          <p className="text-gray-600">Order #{order.id} — ₹{order.total_amount}</p>
+          {order.payment_method === "cod" && (
+            <p className="text-brand-dark font-medium mt-1">
+              Pay ₹{order.cod_amount_due} plus delivery charges in cash when your order is delivered.
+            </p>
+          )}
+        </div>
         <Link to="/products" className="text-brand-forest hover:underline">Continue shopping</Link>
       </div>
     );

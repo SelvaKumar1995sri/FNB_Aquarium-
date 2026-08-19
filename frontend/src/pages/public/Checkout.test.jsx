@@ -76,14 +76,18 @@ describe("Checkout", () => {
 
     renderCheckout();
 
-    const radio = await screen.findByRole("radio");
-    expect(radio.checked).toBe(true);
+    await screen.findByText("Home");
+    const addressRadio = screen.getAllByRole("radio").find((radio) => radio.name === "address");
+    expect(addressRadio.checked).toBe(true);
   });
 
-  it("Pay Now posts to /checkout/ and opens Razorpay with the returned order details", async () => {
+  it("Pay Now posts to /checkout/ with the online payment method and opens Razorpay with the returned order details", async () => {
     apiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
     apiClient.post.mockResolvedValueOnce({
-      data: { razorpay_order_id: "order_test1", razorpay_key_id: "rzp_test_key", amount: "200.00", currency: "INR" },
+      data: {
+        razorpay_order_id: "order_test1", razorpay_key_id: "rzp_test_key",
+        amount: "200.00", order_total: "200.00", cod_amount_due: "0.00", payment_method: "online", currency: "INR",
+      },
     });
     const mockOpen = vi.fn();
     window.Razorpay = vi.fn(function () {
@@ -91,10 +95,12 @@ describe("Checkout", () => {
     });
 
     renderCheckout();
-    await screen.findByRole("radio");
-    fireEvent.click(screen.getByRole("button", { name: /pay now/i }));
+    await screen.findAllByRole("radio");
+    fireEvent.click(screen.getByRole("button", { name: /pay .* now/i }));
 
-    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith("/checkout/", { address: 1 }));
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith("/checkout/", { address: 1, payment_method: "online" })
+    );
     await waitFor(() =>
       expect(window.Razorpay).toHaveBeenCalledWith(
         expect.objectContaining({ order_id: "order_test1", key: "rzp_test_key", amount: 20000 })
@@ -103,10 +109,72 @@ describe("Checkout", () => {
     expect(mockOpen).toHaveBeenCalled();
   });
 
+  it("is always available, regardless of cart subtotal", async () => {
+    mockCart = {
+      items: [{ id: 1, product_name: "Fish net", quantity: 1, line_total: "3.99" }],
+      subtotal: "3.99",
+    };
+    apiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
+
+    renderCheckout();
+
+    await screen.findAllByRole("radio");
+    expect(screen.getByText(/cash on delivery/i)).toBeTruthy();
+  });
+
+  it("selecting Cash on Delivery places the order directly with no Razorpay charge", async () => {
+    apiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
+    apiClient.post.mockResolvedValueOnce({
+      data: { razorpay_order_id: "cod_abc123", payment_method: "cod", total_amount: "200.00" },
+    });
+    window.Razorpay = vi.fn();
+
+    renderCheckout();
+    await screen.findAllByRole("radio");
+    fireEvent.click(screen.getByText(/cash on delivery/i));
+    fireEvent.click(screen.getByRole("button", { name: /place order/i }));
+
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith("/checkout/", { address: 1, payment_method: "cod" })
+    );
+    expect(window.Razorpay).not.toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith("/order-confirmation/cod_abc123");
+  });
+
+  it("adding a new address inline selects it without leaving the page", async () => {
+    apiClient.get.mockResolvedValueOnce({ data: { results: [] } });
+    apiClient.post.mockResolvedValueOnce({ data: { id: 2, full_name: "Office" } });
+    apiClient.get.mockResolvedValueOnce({
+      data: { results: [{ ...ADDRESSES[0], id: 2, full_name: "Office", is_default: false }] },
+    });
+
+    renderCheckout();
+    fireEvent.click(await screen.findByText("+ Add a new address"));
+
+    fireEvent.change(screen.getByPlaceholderText("Full name"), { target: { value: "Office" } });
+    fireEvent.change(screen.getByPlaceholderText("Phone"), { target: { value: "9999999999" } });
+    fireEvent.change(screen.getByPlaceholderText("Address line 1"), { target: { value: "2 Rd" } });
+    fireEvent.change(screen.getByPlaceholderText("City"), { target: { value: "City" } });
+    fireEvent.change(screen.getByPlaceholderText("State"), { target: { value: "State" } });
+    fireEvent.change(screen.getByPlaceholderText("Pincode"), { target: { value: "500002" } });
+    fireEvent.click(screen.getByRole("button", { name: /add address/i }));
+
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith("/addresses/", expect.objectContaining({
+      full_name: "Office", phone: "9999999999", line1: "2 Rd", city: "City", state: "State", pincode: "500002",
+    })));
+
+    const radios = await screen.findAllByRole("radio");
+    const addressRadio = radios.find((radio) => radio.name === "address");
+    expect(addressRadio.checked).toBe(true);
+  });
+
   it("navigates to the order-confirmation page when Razorpay's handler fires", async () => {
     apiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
     apiClient.post.mockResolvedValueOnce({
-      data: { razorpay_order_id: "order_test2", razorpay_key_id: "rzp_test_key", amount: "200.00", currency: "INR" },
+      data: {
+        razorpay_order_id: "order_test2", razorpay_key_id: "rzp_test_key",
+        amount: "200.00", order_total: "200.00", cod_amount_due: "0.00", payment_method: "online", currency: "INR",
+      },
     });
     let capturedOptions;
     window.Razorpay = vi.fn(function (options) {
@@ -115,8 +183,8 @@ describe("Checkout", () => {
     });
 
     renderCheckout();
-    await screen.findByRole("radio");
-    fireEvent.click(screen.getByRole("button", { name: /pay now/i }));
+    await screen.findAllByRole("radio");
+    fireEvent.click(screen.getByRole("button", { name: /pay .* now/i }));
     await waitFor(() => expect(window.Razorpay).toHaveBeenCalled());
 
     capturedOptions.handler();
@@ -133,8 +201,8 @@ describe("Checkout", () => {
     window.Razorpay = vi.fn();
 
     renderCheckout();
-    await screen.findByRole("radio");
-    fireEvent.click(screen.getByRole("button", { name: /pay now/i }));
+    await screen.findAllByRole("radio");
+    fireEvent.click(screen.getByRole("button", { name: /pay .* now/i }));
 
     expect(await screen.findByText("Your cart is empty.")).toBeTruthy();
   });

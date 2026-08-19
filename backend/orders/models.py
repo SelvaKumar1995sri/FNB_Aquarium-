@@ -1,8 +1,15 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 
 from accounts.models import Address
 from catalog.models import Product
+
+PAYMENT_METHOD_CHOICES = [
+    ("online", "Online"),
+    ("cod", "Cash on Delivery"),
+]
 
 
 class Order(models.Model):
@@ -17,6 +24,8 @@ class Order(models.Model):
     address = models.ForeignKey(Address, on_delete=models.PROTECT)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="placed")
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, default="online")
+    cod_amount_due = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     razorpay_order_id = models.CharField(max_length=100)
     razorpay_payment_id = models.CharField(max_length=100, blank=True)
 
@@ -49,6 +58,9 @@ class OrderItem(models.Model):
 
 
 class CheckoutSession(models.Model):
+    # Only ever created for the "online" payment path — Cash on Delivery
+    # orders are created directly by CheckoutView (no Razorpay involved), so
+    # this model has no payment_method concept of its own.
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     address = models.ForeignKey(Address, on_delete=models.PROTECT)
     razorpay_order_id = models.CharField(max_length=100, unique=True)

@@ -80,6 +80,58 @@ class CheckoutViewTests(APITestCase):
         mock_get_client.assert_not_called()
 
     @patch("orders.views.get_razorpay_client")
+    def test_cod_checkout_creates_the_order_immediately_with_no_razorpay_charge(self, mock_get_client):
+        response = self.client.post(
+            "/api/v1/checkout/", {"address": self.address.id, "payment_method": "cod"}, **self.auth_header
+        )
+
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertEqual(data["payment_method"], "cod")
+        self.assertEqual(data["total_amount"], "200.00")
+        self.assertTrue(data["razorpay_order_id"].startswith("cod_"))
+        mock_get_client.assert_not_called()
+
+        order = Order.objects.get(razorpay_order_id=data["razorpay_order_id"])
+        self.assertEqual(order.user, self.user)
+        self.assertEqual(order.address, self.address)
+        self.assertEqual(str(order.total_amount), "200.00")
+        self.assertEqual(order.payment_method, "cod")
+        self.assertEqual(str(order.cod_amount_due), "200.00")
+
+        items = list(OrderItem.objects.filter(order=order))
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].quantity, 2)
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock_quantity, 3)
+        self.assertFalse(CartItem.objects.filter(cart__user=self.user).exists())
+
+    @patch("orders.views.get_razorpay_client")
+    def test_cod_checkout_is_allowed_for_low_cost_orders(self, mock_get_client):
+        self.product.price = "3.99"
+        self.product.save()
+        CartItem.objects.filter(cart=self.cart).update(quantity=1)
+
+        response = self.client.post(
+            "/api/v1/checkout/", {"address": self.address.id, "payment_method": "cod"}, **self.auth_header
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["total_amount"], "3.99")
+        mock_get_client.assert_not_called()
+
+    @patch("orders.views.get_razorpay_client")
+    def test_rejects_invalid_payment_method(self, mock_get_client):
+        response = self.client.post(
+            "/api/v1/checkout/", {"address": self.address.id, "payment_method": "bitcoin"}, **self.auth_header
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("payment_method", response.json())
+        mock_get_client.assert_not_called()
+
+    @patch("orders.views.get_razorpay_client")
     def test_rejects_invalid_address(self, mock_get_client):
         other = User.objects.create_user(username="b@example.com", password="pw12345678")
         their_address = Address.objects.create(

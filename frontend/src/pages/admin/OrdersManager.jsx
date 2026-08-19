@@ -55,13 +55,14 @@ export default function OrdersManager() {
       </select>
       {ordersError && <p className="text-red-600 mb-4">Couldn't load orders — please try again later.</p>}
       <table className="w-full text-left">
-        <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Placed</th><th></th></tr></thead>
+        <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>COD Due</th><th>Status</th><th>Placed</th><th></th></tr></thead>
         <tbody>
           {orders.map((order) => (
             <tr key={order.id} className="border-t">
               <td>#{order.id}</td>
               <td>{order.customer_name || order.customer_email}</td>
               <td>₹{order.total_amount}</td>
+              <td>{order.payment_method === "cod" ? `₹${order.cod_amount_due}` : "—"}</td>
               <td>{STATUS_LABELS[order.status]}</td>
               <td>{new Date(order.created_at).toLocaleDateString()}</td>
               <td><Link to={`/admin/orders/${order.id}`} className="text-brand-forest hover:underline">View</Link></td>

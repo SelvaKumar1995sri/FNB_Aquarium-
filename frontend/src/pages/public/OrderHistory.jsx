@@ -54,6 +54,9 @@ export default function OrderHistory() {
             <div className="text-right">
               <p className="text-sm font-medium text-brand-forest">{STATUS_LABELS[order.status]}</p>
               <p className="text-sm text-gray-600">₹{order.total_amount}</p>
+              {order.payment_method === "cod" && (
+                <p className="text-xs text-amber-600">Cash on delivery</p>
+              )}
             </div>
           </Link>
         ))}

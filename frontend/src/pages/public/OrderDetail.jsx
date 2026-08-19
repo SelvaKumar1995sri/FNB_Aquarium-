@@ -45,6 +45,11 @@ export default function OrderDetail() {
 
       <div className="border rounded-xl p-4 bg-white shadow-sm mb-6">
         <p className="font-medium text-brand-dark mb-1">Status: {STATUS_LABELS[order.status]}</p>
+        {order.payment_method === "cod" && (
+          <p className="text-sm text-brand-dark font-medium">
+            Pay ₹{order.cod_amount_due} plus delivery charges in cash on delivery.
+          </p>
+        )}
         {hasTracking && (
           <div className="mt-3 text-sm text-gray-700">
             {order.porter_name ? (

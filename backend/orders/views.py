@@ -1,5 +1,6 @@
 import json
 import logging
+import uuid
 from decimal import Decimal
 
 from django.conf import settings
@@ -30,6 +31,10 @@ class CheckoutView(APIView):
         if not address:
             raise serializers.ValidationError({"address": "Please select a valid delivery address."})
 
+        payment_method = request.data.get("payment_method", "online")
+        if payment_method not in ("online", "cod"):
+            raise serializers.ValidationError({"payment_method": "Invalid payment method."})
+
         cart = Cart.objects.filter(user=request.user).prefetch_related("items__product").first()
         items = list(cart.items.all()) if cart else []
         if not items:
@@ -42,6 +47,10 @@ class CheckoutView(APIView):
                 )
 
         total = sum((item.product.price * item.quantity for item in items), start=Decimal("0"))
+
+        if payment_method == "cod":
+            return self._place_cod_order(request, address, items, total)
+
         snapshot = [
             {
                 "product_id": item.product.id,
@@ -72,7 +81,52 @@ class CheckoutView(APIView):
                 "razorpay_order_id": razorpay_order["id"],
                 "razorpay_key_id": settings.RAZORPAY_KEY_ID,
                 "amount": f"{total:.2f}",
+                "payment_method": "online",
                 "currency": "INR",
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    def _place_cod_order(self, request, address, items, total):
+        # No Razorpay/CheckoutSession involved — Cash on Delivery orders are
+        # placed immediately with no online charge; the porter/delivery
+        # charge is determined and collected in cash when the order is
+        # dispatched, not calculated here.
+        with transaction.atomic():
+            order = Order.objects.create(
+                user=request.user,
+                address=address,
+                total_amount=total,
+                payment_method="cod",
+                cod_amount_due=total,
+                razorpay_order_id=f"cod_{uuid.uuid4().hex}",
+            )
+            locked_products = {
+                product.id: product
+                for product in Product.objects.select_for_update().filter(
+                    id__in=[item.product_id for item in items]
+                )
+            }
+            for item in items:
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    product_name=item.product.name,
+                    unit_price=item.product.price,
+                    quantity=item.quantity,
+                )
+                product = locked_products.get(item.product_id)
+                if product:
+                    product.stock_quantity = max(0, product.stock_quantity - item.quantity)
+                    product.save()
+
+            CartItem.objects.filter(cart__user=request.user).delete()
+
+        return Response(
+            {
+                "razorpay_order_id": order.razorpay_order_id,
+                "payment_method": "cod",
+                "total_amount": f"{total:.2f}",
             },
             status=status.HTTP_201_CREATED,
         )
