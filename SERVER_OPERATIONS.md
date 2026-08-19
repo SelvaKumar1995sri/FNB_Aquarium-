@@ -11,22 +11,95 @@ the same across stop/start).
 
 ---
 
-## 1. Connecting via SSH
+## 1. Connecting to the instance
 
-From PowerShell, on the machine that has the key file:
+### 1.1 Find the address (if you've forgotten it)
+
+The instance is always reachable at the same address because it uses an
+Elastic IP, which doesn't change across stop/start:
+```
+13.50.60.19
+```
+To confirm this in the console (e.g. if you're not sure it's still
+correct): **AWS Console → EC2 → Elastic IPs** — the single entry listed
+there is it, and its "Associated instance" column shows which instance it's
+currently attached to.
+
+### 1.2 Normal SSH connection (the everyday way in)
+
+The private key file is `fnbaqua-key-clean.pem`. From **PowerShell**, on
+whichever machine has that file (default location assumed: Downloads):
 ```powershell
 ssh -i "$env:USERPROFILE\Downloads\fnbaqua-key-clean.pem" ubuntu@13.50.60.19
 ```
-If you ever see `Permission denied (publickey)` or `bad permissions`, the
-key file's Windows ACL likely got reset (e.g. copied to a new machine or
-re-downloaded). Fix it with:
+- Username is always `ubuntu` (this is a Canonical Ubuntu AMI).
+- First-ever connection from a given machine will ask to confirm the host
+  fingerprint — type `yes`.
+- You should land at a prompt like `ubuntu@ip-172-31-25-101:~$`.
+
+To disconnect cleanly:
+```bash
+exit
+```
+
+### 1.3 If SSH says `Permission denied (publickey)` or `bad permissions`
+
+The key file's Windows ACL has gotten reset or corrupted (e.g. copied to a
+new machine, re-downloaded, or a previous `icacls` command was mistyped).
+Fix it with these three commands, in order:
 ```powershell
 icacls "$env:USERPROFILE\Downloads\fnbaqua-key-clean.pem" /inheritance:r
 icacls "$env:USERPROFILE\Downloads\fnbaqua-key-clean.pem" /remove "NT AUTHORITY\SYSTEM"
 icacls "$env:USERPROFILE\Downloads\fnbaqua-key-clean.pem" /remove "BUILTIN\Administrators"
 ```
-Then confirm with `icacls` (no arguments) that only your own Windows
-username shows, with `(R)`.
+Then verify — this should print **only** your own Windows username with
+`(R)` and nothing else:
+```powershell
+icacls "$env:USERPROFILE\Downloads\fnbaqua-key-clean.pem"
+```
+If some other unremovable entry (e.g. a stray `BUILTIN\BUILTIN`) still
+shows up and won't clear with `/remove`, don't keep fighting that specific
+file — copy the key's contents into a brand-new file instead (a fresh file
+gets a clean ACL with nothing to fix), then repeat the three commands above
+against the new file and use it for `-i` going forward:
+```powershell
+Get-Content "$env:USERPROFILE\Downloads\fnbaqua-key-clean.pem" | Set-Content "$env:USERPROFILE\Downloads\fnbaqua-key-clean-2.pem"
+```
+
+### 1.4 If SSH says `Connection timed out`
+
+Almost always means either your current public IP no longer matches the
+security group's SSH rule, or the instance is stopped. Check, in order:
+
+1. **Is the instance actually running?** AWS Console → EC2 → Instances —
+   confirm `fnbaqua-test-2` shows **Running**, not **Stopped**.
+2. **Has your IP changed?** Check your current public IP:
+   ```powershell
+   Test-NetConnection -ComputerName 13.50.60.19 -Port 22
+   ```
+   If `TcpTestSucceeded: False`, get your current IP by opening
+   `https://checkip.amazonaws.com` in a browser, then go to **EC2 → Security
+   Groups → launch-wizard-1 → Inbound rules → Edit inbound rules**, and
+   update the SSH rule's source to your current IP (select **My IP** from
+   the dropdown to auto-fill it — don't type it by hand).
+
+### 1.5 Fallback: browser-based connection (no SSH key needed)
+
+If SSH is broken for some reason unrelated to the above (e.g. you're on a
+machine without the key file), you can connect through the browser instead:
+
+1. AWS Console → EC2 → Instances → select `fnbaqua-test-2` → **Connect**
+   button.
+2. **EC2 Instance Connect** tab → Username: `ubuntu` → **Connect**.
+3. This opens a terminal directly in the browser, authenticated via your
+   AWS login instead of the `.pem` key.
+
+Note: this method's traffic comes from an AWS-managed IP range, not your
+own IP — if the security group's SSH rule is currently locked to a specific
+IP that isn't yours, this fallback can also fail with "Error establishing
+SSH connection." If so, temporarily add a second SSH inbound rule for
+`0.0.0.0/0`, use EC2 Instance Connect, then remove that temporary rule
+again afterward.
 
 ---
 
