@@ -32,7 +32,7 @@ export default function ProductCard({ product }) {
   return (
     <Link to={`/product/${product.slug}`} className="border rounded-lg p-2 sm:p-4 hover:shadow-md transition flex flex-col">
       {image && (
-        <div className="w-full h-24 sm:h-40 bg-gray-50 rounded mb-2 sm:mb-3 flex items-center justify-center overflow-hidden">
+        <div className="w-full aspect-square bg-gray-50 rounded mb-2 sm:mb-3 flex items-center justify-center overflow-hidden p-2">
           <img
             src={image.image}
             alt={image.alt_text || product.name}

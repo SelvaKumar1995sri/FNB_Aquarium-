@@ -31,8 +31,15 @@ export default function CustomerLogin() {
     <div className="min-h-[70vh] flex items-center justify-center bg-brand-light px-4 py-12">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm grid gap-4 border border-black/5"
+        className="relative bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm grid gap-4 border border-black/5"
       >
+        <Link
+          to="/"
+          aria-label="Close"
+          className="absolute top-3 right-3 p-2 text-xl leading-none text-gray-400 hover:text-brand-dark"
+        >
+          &times;
+        </Link>
         <div>
           <h1 className="text-2xl font-semibold text-brand-dark">Welcome back</h1>
           <p className="text-sm text-gray-500 mt-1">Log in to manage your addresses and orders.</p>
