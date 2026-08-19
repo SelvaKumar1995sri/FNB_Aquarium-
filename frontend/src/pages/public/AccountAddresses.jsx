@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { customerApiClient } from "../../api/customerClient";
+import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
 
 const EMPTY_FORM = { full_name: "", phone: "", line1: "", line2: "", city: "", state: "", pincode: "", is_default: false };
 
 export default function AccountAddresses() {
+  const navigate = useNavigate();
+  // Set only by Register.jsx's post-signup redirect to this page — once that
+  // first address is saved, send the new customer on to home instead of
+  // leaving them looking at the address list/form they just came from.
+  // Later visits to this page (from "My Account") have no such state and
+  // behave as a normal address manager.
+  const redirectHomeAfterAdd = Boolean(useLocation().state?.redirectHomeAfterAdd);
   const [addresses, setAddresses] = useState([]);
   const [loadError, setLoadError] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -14,7 +22,7 @@ export default function AccountAddresses() {
   const [isSaving, setIsSaving] = useState(false);
 
   const load = () =>
-    customerApiClient
+    apiClient
       .get("/addresses/")
       .then((response) => {
         setAddresses(response.data.results);
@@ -46,9 +54,13 @@ export default function AccountAddresses() {
     setIsSaving(true);
     try {
       if (editingId) {
-        await customerApiClient.patch(`/addresses/${editingId}/`, form);
+        await apiClient.patch(`/addresses/${editingId}/`, form);
       } else {
-        await customerApiClient.post("/addresses/", form);
+        await apiClient.post("/addresses/", form);
+        if (redirectHomeAfterAdd) {
+          navigate("/");
+          return;
+        }
       }
       resetForm();
       load();
@@ -62,7 +74,7 @@ export default function AccountAddresses() {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this address?")) return;
     try {
-      await customerApiClient.delete(`/addresses/${id}/`);
+      await apiClient.delete(`/addresses/${id}/`);
       load();
     } catch (error) {
       setFormError(describeError(error, "Couldn't delete this address — please try again."));

@@ -4,7 +4,6 @@ import { Link, NavLink } from "react-router-dom";
 import { useAdminNotifications } from "../../context/AdminNotificationsContext";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
-import { useCustomerAuth } from "../../context/CustomerAuthContext";
 
 const NAV_LINKS = [
   { to: "/fish", label: "Fish" },
@@ -55,8 +54,8 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifSnapshot, setNotifSnapshot] = useState({ orders: [], inquiries: [] });
-  const { isAuthenticated, isStaff, logout } = useAuth();
-  const { isAuthenticated: isCustomerAuthenticated, profile, logout: customerLogout } = useCustomerAuth();
+  const { isAuthenticated, isStaff, profile, logout } = useAuth();
+  const isCustomerAuthenticated = isAuthenticated && !isStaff;
   const { itemCount } = useCart();
   const { unreadOrdersCount, unreadInquiriesCount, latestOrders, latestInquiries, markSeen } = useAdminNotifications();
 
@@ -125,30 +124,12 @@ export default function Header() {
                 )}
               </Link>
             )}
-            {isCustomerAuthenticated ? (
-              <>
-                <Link
-                  to="/account/addresses"
-                  className="hidden sm:inline whitespace-nowrap text-sm px-3 py-1.5 hover:text-brand-aqua transition-colors"
-                >
-                  Hi, {profile?.name?.split(" ")[0] || "there"}
-                </Link>
-                <button
-                  type="button"
-                  onClick={customerLogout}
-                  aria-label="Customer logout"
-                  className="whitespace-nowrap text-sm px-3 py-1.5 border border-white/30 rounded hover:border-brand-aqua hover:text-brand-aqua transition-colors"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
+            {isCustomerAuthenticated && (
               <Link
-                to="/login"
-                aria-label="Customer login"
-                className="whitespace-nowrap text-sm px-3 py-1.5 border border-white/30 rounded hover:border-brand-aqua hover:text-brand-aqua transition-colors"
+                to="/account/addresses"
+                className="hidden sm:inline whitespace-nowrap text-sm px-3 py-1.5 hover:text-brand-aqua transition-colors"
               >
-                Login
+                Hi, {profile?.name?.split(" ")[0] || "there"}
               </Link>
             )}
             {isAuthenticated && isStaff && (
@@ -196,22 +177,22 @@ export default function Header() {
                 )}
               </div>
             )}
-            {isAuthenticated && isStaff ? (
+            {isAuthenticated ? (
               <button
                 type="button"
                 onClick={logout}
-                aria-label="Admin logout"
+                aria-label="Logout"
                 className="whitespace-nowrap text-sm px-3 py-1.5 border border-white/30 rounded hover:border-brand-aqua hover:text-brand-aqua transition-colors"
               >
                 Logout
               </button>
             ) : (
               <Link
-                to="/admin/login"
-                aria-label="Admin login"
+                to="/login"
+                aria-label="Login"
                 className="whitespace-nowrap text-sm px-3 py-1.5 border border-white/30 rounded hover:border-brand-aqua hover:text-brand-aqua transition-colors"
               >
-                <span className="hidden sm:inline">Admin </span>Login
+                Login
               </Link>
             )}
           </div>

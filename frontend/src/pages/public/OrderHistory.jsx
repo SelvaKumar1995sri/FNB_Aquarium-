@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { customerApiClient } from "../../api/customerClient";
+import { apiClient } from "../../api/client";
 
 const STATUS_LABELS = {
   placed: "Placed",
@@ -19,7 +19,7 @@ export default function OrderHistory() {
   const [count, setCount] = useState(0);
 
   const load = (url) => {
-    const request = url ? customerApiClient.get(url) : customerApiClient.get("/orders/");
+    const request = url ? apiClient.get(url) : apiClient.get("/orders/");
     request
       .then((response) => {
         setOrders(response.data.results);

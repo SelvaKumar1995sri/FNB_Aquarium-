@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { customerApiClient } from "../../api/customerClient";
+import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
 import { useCart } from "../../context/CartContext";
 
@@ -29,7 +29,7 @@ export default function Checkout() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    customerApiClient
+    apiClient
       .get("/addresses/")
       .then((response) => {
         const results = response.data.results;
@@ -51,7 +51,7 @@ export default function Checkout() {
         return;
       }
 
-      const response = await customerApiClient.post("/checkout/", { address: selectedAddressId });
+      const response = await apiClient.post("/checkout/", { address: selectedAddressId });
       const { razorpay_order_id, razorpay_key_id, amount } = response.data;
 
       const razorpay = new window.Razorpay({

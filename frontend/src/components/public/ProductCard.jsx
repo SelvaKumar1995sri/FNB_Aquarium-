@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
-import { useCustomerAuth } from "../../context/CustomerAuthContext";
 
 export default function ProductCard({ product }) {
   const image = product.images?.[0];
-  const { isAuthenticated: isCustomerAuthenticated } = useCustomerAuth();
+  const { isAuthenticated } = useAuth();
   const { addItem } = useCart();
   const navigate = useNavigate();
   const [status, setStatus] = useState("idle"); // idle | adding | added | error
@@ -14,7 +14,7 @@ export default function ProductCard({ product }) {
   const handleAddToCart = async (event) => {
     event.preventDefault();
     event.stopPropagation();
-    if (!isCustomerAuthenticated) {
+    if (!isAuthenticated) {
       navigate("/login");
       return;
     }

@@ -4,8 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "../../api/client";
 import Breadcrumbs from "../../components/public/Breadcrumbs";
 import InquiryForm from "../../components/public/InquiryForm";
+import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
-import { useCustomerAuth } from "../../context/CustomerAuthContext";
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -14,7 +14,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [status, setStatus] = useState("idle"); // idle | adding | added | error
   const [cartError, setCartError] = useState("");
-  const { isAuthenticated: isCustomerAuthenticated } = useCustomerAuth();
+  const { isAuthenticated } = useAuth();
   const { addItem } = useCart();
   const navigate = useNavigate();
 
@@ -29,7 +29,7 @@ export default function ProductDetail() {
   }, [slug]);
 
   const handleAddToCart = async () => {
-    if (!isCustomerAuthenticated) {
+    if (!isAuthenticated) {
       navigate("/login");
       return;
     }
@@ -59,7 +59,13 @@ export default function ProductDetail() {
       <div className="px-4 py-8 grid gap-8 md:grid-cols-2">
         <div>
           {product.images?.[0] && (
-            <img src={product.images[0].image} alt={product.name} className="w-full rounded-lg" />
+            <div className="w-full aspect-square bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden p-6">
+              <img
+                src={product.images[0].image}
+                alt={product.name}
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
           )}
         </div>
         <div>

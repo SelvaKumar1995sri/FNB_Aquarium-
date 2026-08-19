@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { customerApiClient } from "../../api/customerClient";
+import { apiClient } from "../../api/client";
 import { useCart } from "../../context/CartContext";
 
 export default function OrderConfirmation({ pollIntervalMs = 1500, pollTimeoutMs = 15000 }) {
@@ -15,7 +15,7 @@ export default function OrderConfirmation({ pollIntervalMs = 1500, pollTimeoutMs
     const startedAt = Date.now();
 
     const poll = () => {
-      customerApiClient
+      apiClient
         .get(`/orders/by-razorpay-order/${razorpayOrderId}/`)
         .then((response) => {
           if (cancelled) return;

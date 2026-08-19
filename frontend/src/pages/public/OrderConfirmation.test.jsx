@@ -2,11 +2,11 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { customerApiClient } from "../../api/customerClient";
+import { apiClient } from "../../api/client";
 import OrderConfirmation from "./OrderConfirmation";
 
-vi.mock("../../api/customerClient", () => ({
-  customerApiClient: { get: vi.fn() },
+vi.mock("../../api/client", () => ({
+  apiClient: { get: vi.fn() },
 }));
 
 const mockRefreshCart = vi.fn();
@@ -34,7 +34,7 @@ describe("OrderConfirmation", () => {
   });
 
   it("shows a confirming state while polling", () => {
-    customerApiClient.get.mockReturnValue(new Promise(() => {})); // never resolves
+    apiClient.get.mockReturnValue(new Promise(() => {})); // never resolves
 
     renderConfirmation({ pollIntervalMs: 10, pollTimeoutMs: 100 });
 
@@ -42,7 +42,7 @@ describe("OrderConfirmation", () => {
   });
 
   it("shows the order summary once the order appears", async () => {
-    customerApiClient.get.mockResolvedValueOnce({
+    apiClient.get.mockResolvedValueOnce({
       data: { id: 42, total_amount: "200.00", status: "placed", items: [] },
     });
 
@@ -54,7 +54,7 @@ describe("OrderConfirmation", () => {
   });
 
   it("retries after a 404 and eventually shows the order", async () => {
-    customerApiClient.get
+    apiClient.get
       .mockRejectedValueOnce({ response: { status: 404 } })
       .mockResolvedValueOnce({ data: { id: 7, total_amount: "50.00", status: "placed", items: [] } });
 
@@ -64,7 +64,7 @@ describe("OrderConfirmation", () => {
   });
 
   it("shows the reassuring fallback message after the poll times out", async () => {
-    customerApiClient.get.mockRejectedValue({ response: { status: 404 } });
+    apiClient.get.mockRejectedValue({ response: { status: 404 } });
 
     renderConfirmation({ pollIntervalMs: 10, pollTimeoutMs: 30 });
 

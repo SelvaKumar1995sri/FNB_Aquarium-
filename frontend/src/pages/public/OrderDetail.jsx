@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { customerApiClient } from "../../api/customerClient";
+import { apiClient } from "../../api/client";
 
 const STATUS_LABELS = {
   placed: "Placed",
@@ -17,7 +17,7 @@ export default function OrderDetail() {
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    customerApiClient
+    apiClient
       .get(`/orders/${id}/`)
       .then((response) => {
         setOrder(response.data);

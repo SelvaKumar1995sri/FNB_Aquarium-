@@ -8,21 +8,20 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(localStorage.getItem("access"));
   const [isStaff, setIsStaff] = useState(false);
+  const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Single fail-closed helper: clears both tokens from storage and resets
   // in-memory state to logged-out. Every place in this file that needs to
-  // give up on a session (login()'s non-staff branch, logout(), the
-  // mount-verify effect's failure branches, and the response interceptor's
-  // failure branches below) calls this instead of repeating the four
-  // statements inline — that repetition is exactly what let an earlier copy
-  // (the mount-verify effect's plain .catch()) drift out of sync and miss
-  // setIsStaff(false).
+  // give up on a session (logout(), the mount-verify effect's failure
+  // branch, and the response interceptor's failure branches below) calls
+  // this instead of repeating the statements inline.
   const clearSession = () => {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
     setAccessToken(null);
     setIsStaff(false);
+    setProfile(null);
   };
 
   useEffect(() => {
@@ -112,29 +111,21 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Runs once on mount only (not on every accessToken change) — login()/logout()
-    // already manage accessToken/isStaff state directly and correctly, so re-running
-    // this on every accessToken change just risks a spurious second /auth/me/ call
-    // (e.g. right after a successful login()) clobbering already-verified state if
-    // that second call fails transiently. This effect's job is solely to restore
-    // (or fail-closed reject) a pre-existing session on page load.
+    // already manage accessToken/isStaff/profile state directly and correctly, so
+    // re-running this on every accessToken change just risks a spurious second
+    // /accounts/me/ call (e.g. right after a successful login()) clobbering
+    // already-verified state if that second call fails transiently. This effect's
+    // job is solely to restore (or fail-closed reject) a pre-existing session on
+    // page load.
     if (!accessToken) {
       setIsLoading(false);
       return;
     }
     apiClient
-      .get("/auth/me/")
+      .get("/accounts/me/")
       .then((response) => {
-        if (!response.data.is_staff) {
-          // Token belongs to a non-staff user (e.g. staff flag revoked mid-session,
-          // or a stale token from before staff was enforced at login time). Fail
-          // closed: clear the session instead of leaving isAuthenticated true with
-          // isStaff false, which would otherwise loop between /admin and
-          // /admin/login (Login redirects on isAuthenticated, AdminGuard redirects
-          // back on !isStaff).
-          clearSession();
-          return;
-        }
-        setIsStaff(true);
+        setIsStaff(response.data.is_staff);
+        setProfile(response.data);
       })
       .catch(() => {
         clearSession();
@@ -143,23 +134,40 @@ export function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const login = async (username, password) => {
-    const response = await apiClient.post("/auth/login/", { username, password });
-    const { access, refresh } = response.data;
-    // Verify staff status before persisting anything, so a valid-but-non-staff
-    // login fails the same way as bad credentials instead of bouncing between
-    // /admin and /admin/login while the isStaff check races the navigation.
-    const me = await apiClient.get("/auth/me/", { headers: { Authorization: `Bearer ${access}` } });
-    if (!me.data.is_staff) {
-      // Fail closed here too: a valid-but-non-staff login must not leave any
-      // stale prior session lingering in storage/state.
+  // Shared by login() and register(): given a fresh token pair, fetch the
+  // unified profile (which also carries is_staff) and persist everything
+  // together, or fail closed if the profile fetch fails.
+  const persistSession = async (access, refresh) => {
+    try {
+      const me = await apiClient.get("/accounts/me/", { headers: { Authorization: `Bearer ${access}` } });
+      localStorage.setItem("access", access);
+      localStorage.setItem("refresh", refresh);
+      setAccessToken(access);
+      setIsStaff(me.data.is_staff);
+      setProfile(me.data);
+      return me.data;
+    } catch (error) {
       clearSession();
-      throw new Error("Not staff");
+      throw error;
     }
-    localStorage.setItem("access", access);
-    localStorage.setItem("refresh", refresh);
-    setIsStaff(true);
-    setAccessToken(access);
+  };
+
+  const login = async (username, password) => {
+    // Registration always lowercases an email into the stored username (see
+    // accounts/serializers.py's RegisterSerializer), but login is a
+    // case-sensitive exact match — so a customer who types their email back
+    // with different capitalization needs it normalized here. Staff usernames
+    // (no "@") are left exactly as typed since those aren't lowercased at
+    // creation time.
+    const normalized = username.includes("@") ? username.trim().toLowerCase() : username.trim();
+    const response = await apiClient.post("/auth/login/", { username: normalized, password });
+    return persistSession(response.data.access, response.data.refresh);
+  };
+
+  const register = async ({ name, email, phone, password }) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const response = await apiClient.post("/auth/register/", { name, email: normalizedEmail, phone, password });
+    return persistSession(response.data.access, response.data.refresh);
   };
 
   const logout = () => {
@@ -167,7 +175,9 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: Boolean(accessToken), isStaff, isLoading, login, logout }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated: Boolean(accessToken), isStaff, isLoading, profile, login, register, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

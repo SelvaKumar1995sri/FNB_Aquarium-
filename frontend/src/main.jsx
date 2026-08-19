@@ -5,18 +5,15 @@ import App from "./App";
 import { AdminNotificationsProvider } from "./context/AdminNotificationsContext";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
-import { CustomerAuthProvider } from "./context/CustomerAuthContext";
 import "./index.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
       <AdminNotificationsProvider>
-        <CustomerAuthProvider>
-          <CartProvider>
-            <App />
-          </CartProvider>
-        </CustomerAuthProvider>
+        <CartProvider>
+          <App />
+        </CartProvider>
       </AdminNotificationsProvider>
     </AuthProvider>
   </StrictMode>,

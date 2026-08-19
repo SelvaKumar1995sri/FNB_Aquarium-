@@ -2,11 +2,11 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { customerApiClient } from "../../api/customerClient";
+import { apiClient } from "../../api/client";
 import Checkout from "./Checkout";
 
-vi.mock("../../api/customerClient", () => ({
-  customerApiClient: { get: vi.fn(), post: vi.fn() },
+vi.mock("../../api/client", () => ({
+  apiClient: { get: vi.fn(), post: vi.fn() },
 }));
 
 const mockNavigate = vi.fn();
@@ -53,7 +53,7 @@ describe("Checkout", () => {
 
   it("shows an empty-cart message when the cart has no items", () => {
     mockCart = { items: [], subtotal: "0.00" };
-    customerApiClient.get.mockResolvedValueOnce({ data: { results: [] } });
+    apiClient.get.mockResolvedValueOnce({ data: { results: [] } });
 
     renderCheckout();
 
@@ -63,7 +63,7 @@ describe("Checkout", () => {
   it("shows a loading message instead of the empty-cart message while the cart is still loading", () => {
     mockCart = { items: [], subtotal: "0.00" };
     mockIsLoading = true;
-    customerApiClient.get.mockResolvedValueOnce({ data: { results: [] } });
+    apiClient.get.mockResolvedValueOnce({ data: { results: [] } });
 
     renderCheckout();
 
@@ -72,7 +72,7 @@ describe("Checkout", () => {
   });
 
   it("loads and pre-selects the default address", async () => {
-    customerApiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
+    apiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
 
     renderCheckout();
 
@@ -81,8 +81,8 @@ describe("Checkout", () => {
   });
 
   it("Pay Now posts to /checkout/ and opens Razorpay with the returned order details", async () => {
-    customerApiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
-    customerApiClient.post.mockResolvedValueOnce({
+    apiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
+    apiClient.post.mockResolvedValueOnce({
       data: { razorpay_order_id: "order_test1", razorpay_key_id: "rzp_test_key", amount: "200.00", currency: "INR" },
     });
     const mockOpen = vi.fn();
@@ -94,7 +94,7 @@ describe("Checkout", () => {
     await screen.findByRole("radio");
     fireEvent.click(screen.getByRole("button", { name: /pay now/i }));
 
-    await waitFor(() => expect(customerApiClient.post).toHaveBeenCalledWith("/checkout/", { address: 1 }));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith("/checkout/", { address: 1 }));
     await waitFor(() =>
       expect(window.Razorpay).toHaveBeenCalledWith(
         expect.objectContaining({ order_id: "order_test1", key: "rzp_test_key", amount: 20000 })
@@ -104,8 +104,8 @@ describe("Checkout", () => {
   });
 
   it("navigates to the order-confirmation page when Razorpay's handler fires", async () => {
-    customerApiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
-    customerApiClient.post.mockResolvedValueOnce({
+    apiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
+    apiClient.post.mockResolvedValueOnce({
       data: { razorpay_order_id: "order_test2", razorpay_key_id: "rzp_test_key", amount: "200.00", currency: "INR" },
     });
     let capturedOptions;
@@ -125,8 +125,8 @@ describe("Checkout", () => {
   });
 
   it("shows an error message if the checkout request fails", async () => {
-    customerApiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
-    customerApiClient.post.mockRejectedValueOnce({ response: { data: { cart: "Your cart is empty." } } });
+    apiClient.get.mockResolvedValueOnce({ data: { results: ADDRESSES } });
+    apiClient.post.mockRejectedValueOnce({ response: { data: { cart: "Your cart is empty." } } });
     // Stub Razorpay so loadRazorpayScript() short-circuits instead of appending
     // a real <script> tag — jsdom never fires onload/onerror for injected
     // scripts, and this test is only exercising the failed-POST error path.

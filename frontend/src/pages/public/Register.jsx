@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { describeError } from "../../api/describeError";
-import { useCustomerAuth } from "../../context/CustomerAuthContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Register() {
-  const { register, isAuthenticated } = useCustomerAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [error, setError] = useState("");
@@ -23,7 +23,7 @@ export default function Register() {
     setIsSubmitting(true);
     try {
       await register({ name: form.name, email: form.email, phone: form.phone, password: form.password });
-      navigate("/account/addresses");
+      navigate("/account/addresses", { state: { redirectHomeAfterAdd: true } });
     } catch (submitError) {
       setError(describeError(submitError, "Couldn't create your account — please check the fields and try again."));
     } finally {

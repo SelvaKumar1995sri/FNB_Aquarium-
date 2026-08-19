@@ -6,7 +6,6 @@ import ScrollToTop from "./components/ScrollToTop";
 import PublicLayout from "./layouts/PublicLayout";
 import CategoriesManager from "./pages/admin/CategoriesManager";
 import InquiriesManager from "./pages/admin/InquiriesManager";
-import Login from "./pages/admin/Login";
 import OrderDetailManager from "./pages/admin/OrderDetailManager";
 import OrdersManager from "./pages/admin/OrdersManager";
 import ProductsManager from "./pages/admin/ProductsManager";
@@ -19,8 +18,8 @@ import CategoryProducts from "./pages/public/CategoryProducts";
 import Checkout from "./pages/public/Checkout";
 import Contact from "./pages/public/Contact";
 import CustomTankBuild from "./pages/public/CustomTankBuild";
-import CustomerLogin from "./pages/public/CustomerLogin";
 import Home from "./pages/public/Home";
+import Login from "./pages/public/Login";
 import NotFound from "./pages/public/NotFound";
 import OrderConfirmation from "./pages/public/OrderConfirmation";
 import OrderDetail from "./pages/public/OrderDetail";
@@ -53,7 +52,7 @@ export default function App() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/policies/:slug" element={<StaticPage />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<CustomerLogin />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/account" element={<CustomerGuard />}>
             <Route index element={<Navigate to="/account/addresses" replace />} />
             <Route path="addresses" element={<AccountAddresses />} />
@@ -80,7 +79,6 @@ export default function App() {
           </Route>
           <Route path="*" element={<NotFound />} />
         </Route>
-        <Route path="/admin/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
   );

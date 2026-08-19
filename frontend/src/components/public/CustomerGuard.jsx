@@ -1,9 +1,9 @@
 import { Navigate, Outlet } from "react-router-dom";
 
-import { useCustomerAuth } from "../../context/CustomerAuthContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function CustomerGuard() {
-  const { isAuthenticated, isLoading } = useCustomerAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) return <div className="p-8">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
