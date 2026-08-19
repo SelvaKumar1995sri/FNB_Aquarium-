@@ -1,0 +1,48 @@
+name: Deploy to AWS test server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      # rsync --delete removes anything on the server not present in this
+      # checkout — backend/.env, media, and staticfiles are NOT tracked in
+      # git, so they must be excluded here or this step would wipe secrets
+      # and uploaded product images on every deploy.
+      - name: Sync code to EC2
+        run: |
+          rsync -avz --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.worktrees' \
+            --exclude 'node_modules' \
+            --exclude '.venv' \
+            --exclude 'backend/media' \
+            --exclude 'backend/staticfiles' \
+            --exclude 'backend/.env' \
+            --exclude 'frontend/dist' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            ./ "ubuntu@${{ secrets.EC2_HOST }}:~/fnbaqua/"
+
+      - name: Build and restart containers
+        run: |
+          ssh -i ~/.ssh/deploy_key "ubuntu@${{ secrets.EC2_HOST }}" '
+            cd ~/fnbaqua &&
+            docker compose build &&
+            docker compose up -d &&
+            docker image prune -f
+          '

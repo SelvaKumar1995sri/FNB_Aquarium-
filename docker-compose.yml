@@ -5,10 +5,33 @@ services:
       POSTGRES_DB: fnbaqua
       POSTGRES_USER: fnbaqua
       POSTGRES_PASSWORD: fnbaqua
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    env_file:
+      - ./backend/.env
+    volumes:
+      - media_data:/app/media
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api/v1
+    volumes:
+      - media_data:/media:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   pgdata:
+  media_data:
