@@ -115,7 +115,7 @@ export default function CategoryProducts({ fixedSlug, title }) {
         {productsError && (
           <p className="text-red-600">Couldn't load products — please try again later.</p>
         )}
-        <div className="grid gap-6 grid-cols-4 sm:grid-cols-5 lg:grid-cols-6">
+        <div className="grid gap-6 grid-cols-2 sm:grid-cols-4 lg:grid-cols-6">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
