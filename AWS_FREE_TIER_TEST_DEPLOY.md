@@ -261,3 +261,10 @@ you can terminate it (release the Elastic IP too, to avoid the small
 unattached-IP charge) and stand up the production stack fresh — none of the
 $0 test setup needs to be preserved or migrated forward, except the
 Razorpay keys and any seed data you want to carry over the same way as §6.
+
+
+
+# remote aws connect command
+## ssh -i "$env:USERPROFILE\Downloads\fnbaqua-key-clean.pem" ubuntu@13.50.60.19
+# To pull and update the code 
+##  git pull origin phase-1 && docker compose build && docker compose up -d.

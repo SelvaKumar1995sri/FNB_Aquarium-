@@ -77,7 +77,7 @@ export default function Home() {
         {newArrivalsError && (
           <p className="text-red-600">Couldn't load new arrivals — please try again later.</p>
         )}
-        <div className="grid gap-6 grid-cols-4 sm:grid-cols-5 lg:grid-cols-6">
+        <div className="grid gap-6 grid-cols-2 sm:grid-cols-4 lg:grid-cols-6">
           {newArrivals.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
