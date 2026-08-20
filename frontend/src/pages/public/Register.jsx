@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { describeError } from "../../api/describeError";
@@ -10,8 +10,15 @@ export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // register() flips isAuthenticated to true, which re-renders this component
+  // before handleSubmit's own navigate() below takes effect. Without this
+  // guard, that extra render hits the isAuthenticated check and fires a
+  // second, stateless redirect that clobbers the redirectHomeAfterAdd state
+  // we're about to pass. A ref (not state) so setting it doesn't itself
+  // trigger another render in the race.
+  const justRegisteredRef = useRef(false);
 
-  if (isAuthenticated) return <Navigate to="/account/addresses" replace />;
+  if (isAuthenticated && !justRegisteredRef.current) return <Navigate to="/account/addresses" replace />;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -23,6 +30,7 @@ export default function Register() {
     setIsSubmitting(true);
     try {
       await register({ name: form.name, email: form.email, phone: form.phone, password: form.password });
+      justRegisteredRef.current = true;
       navigate("/account/addresses", { state: { redirectHomeAfterAdd: true } });
     } catch (submitError) {
       setError(describeError(submitError, "Couldn't create your account — please check the fields and try again."));
