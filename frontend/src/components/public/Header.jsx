@@ -86,7 +86,7 @@ export default function Header() {
   return (
     <>
       <header className="bg-brand-dark text-white sticky top-0 z-40">
-        <div className="grid grid-cols-3 items-center px-4 py-3">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center px-4 py-3 gap-2">
           <div className="flex items-center">
             <button
               type="button"
@@ -102,7 +102,7 @@ export default function Header() {
             </button>
           </div>
 
-          <NavLink to="/" className="flex items-center justify-center">
+          <NavLink to="/" className="flex items-center justify-center min-w-0">
             <img src="/logo.png" alt="FNB Aquatic Studio" className="h-10 w-auto" />
           </NavLink>
 
