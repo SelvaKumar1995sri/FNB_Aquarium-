@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
+import Modal from "../../components/admin/Modal";
 
 export default function VideosManager() {
   const [videos, setVideos] = useState([]);
@@ -10,6 +11,8 @@ export default function VideosManager() {
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const load = () =>
     apiClient
@@ -31,6 +34,11 @@ export default function VideosManager() {
     setFormError("");
   };
 
+  const openNewForm = () => {
+    resetForm();
+    setIsFormOpen(true);
+  };
+
   const startEdit = (video) => {
     setForm({
       title: video.title,
@@ -41,6 +49,12 @@ export default function VideosManager() {
     setThumbnailFile(null);
     setEditingId(video.id);
     setFormError("");
+    setIsFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    resetForm();
   };
 
   const handleSubmit = async (event) => {
@@ -52,14 +66,16 @@ export default function VideosManager() {
     body.append("is_active", form.is_active);
     if (thumbnailFile) body.append("thumbnail", thumbnailFile);
 
+    const wasEditing = Boolean(editingId);
     try {
       if (editingId) {
         await apiClient.patch(`/videos/${editingId}/`, body);
       } else {
         await apiClient.post("/videos/", body);
       }
-      resetForm();
+      closeForm();
       load();
+      setSuccessMessage(wasEditing ? "Video updated." : "Video created.");
     } catch (error) {
       setFormError(describeError(error, "Couldn't save the video — please check the fields and try again."));
     }
@@ -70,6 +86,7 @@ export default function VideosManager() {
       await apiClient.delete(`/videos/${id}/`);
       setFormError("");
       load();
+      setSuccessMessage("Video deleted.");
     } catch (error) {
       setFormError(describeError(error, "Couldn't delete the video — please try again."));
     }
@@ -77,55 +94,18 @@ export default function VideosManager() {
 
   return (
     <div className="px-4 py-8">
-      <h1 className="text-xl font-semibold mb-4">Videos</h1>
-      <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 mb-6 items-center">
-        <input
-          required
-          placeholder="Title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          className="border rounded px-3 py-2"
-        />
-        <input
-          required
-          placeholder="YouTube URL"
-          value={form.youtube_url}
-          onChange={(e) => setForm({ ...form, youtube_url: e.target.value })}
-          className="border rounded px-3 py-2 flex-1"
-        />
-        <input
-          type="number"
-          placeholder="Order"
-          value={form.order}
-          onChange={(e) => setForm({ ...form, order: e.target.value })}
-          className="border rounded px-3 py-2 w-24"
-        />
-        <label className="flex items-center gap-1">
-          <input
-            type="checkbox"
-            checked={form.is_active}
-            onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-          />
-          Active
-        </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setThumbnailFile(e.target.files[0] || null)}
-          className="border rounded px-3 py-2"
-        />
-        <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">
-          {editingId ? "Save Changes" : "Add"}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold">Videos</h1>
+        <button
+          type="button"
+          onClick={openNewForm}
+          className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2"
+        >
+          + New Video
         </button>
-        {editingId && (
-          <button type="button" onClick={resetForm} className="border rounded px-4 py-2">
-            Cancel
-          </button>
-        )}
-      </form>
-      {formError && <p className="text-red-600 mb-4">{formError}</p>}
+      </div>
       {videosError && (
-        <p className="text-red-600">Couldn't load videos — please try again later.</p>
+        <p className="text-red-600 mb-4">Couldn't load videos — please try again later.</p>
       )}
       <ul className="grid gap-2">
         {videos.map((video) => (
@@ -144,6 +124,70 @@ export default function VideosManager() {
           </li>
         ))}
       </ul>
+
+      {isFormOpen && (
+        <Modal title={editingId ? "Edit Video" : "New Video"} onClose={closeForm}>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+            <input
+              required
+              placeholder="Title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="border rounded px-3 py-2"
+            />
+            <input
+              required
+              placeholder="YouTube URL"
+              value={form.youtube_url}
+              onChange={(e) => setForm({ ...form, youtube_url: e.target.value })}
+              className="border rounded px-3 py-2"
+            />
+            <input
+              type="number"
+              placeholder="Order"
+              value={form.order}
+              onChange={(e) => setForm({ ...form, order: e.target.value })}
+              className="border rounded px-3 py-2"
+            />
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+              />
+              Active
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setThumbnailFile(e.target.files[0] || null)}
+              className="border rounded px-3 py-2"
+            />
+            {formError && <p className="text-red-600">{formError}</p>}
+            <div className="flex gap-2">
+              <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">
+                {editingId ? "Save Changes" : "Add"}
+              </button>
+              <button type="button" onClick={closeForm} className="border rounded px-4 py-2">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {successMessage && (
+        <Modal title="Success" onClose={() => setSuccessMessage(null)}>
+          <p className="mb-4">{successMessage}</p>
+          <button
+            type="button"
+            onClick={() => setSuccessMessage(null)}
+            className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2"
+          >
+            OK
+          </button>
+        </Modal>
+      )}
     </div>
   );
 }
