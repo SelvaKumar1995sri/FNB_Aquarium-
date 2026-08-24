@@ -1,5 +1,6 @@
 import re
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.functions import Lower
 
@@ -21,6 +22,20 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        super().clean()
+        if self.parent_id is None:
+            return
+        if self.pk is not None and self.parent_id == self.pk:
+            raise ValidationError("A category can't be nested under itself or one of its own subcategories.")
+        ancestor = self.parent
+        hops = 0
+        while ancestor is not None and hops < 50:
+            if self.pk is not None and ancestor.pk == self.pk:
+                raise ValidationError("A category can't be nested under itself or one of its own subcategories.")
+            ancestor = ancestor.parent
+            hops += 1
 
 
 class Product(models.Model):

@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
@@ -13,6 +14,47 @@ class CategoryModelTests(TestCase):
         parent = Category.objects.create(name="Fish", slug="fish")
         child = Category.objects.create(name="Discus", slug="discus", parent=parent)
         self.assertEqual(child.parent, parent)
+
+    def test_clean_allows_a_normal_top_level_category(self):
+        category = Category.objects.create(name="Fish", slug="fish")
+        category.clean()  # must not raise
+
+    def test_clean_allows_a_normal_subcategory(self):
+        parent = Category.objects.create(name="Fish", slug="fish")
+        child = Category(name="Cichlid", slug="cichlid", parent=parent)
+        child.clean()  # must not raise (create — no pk yet)
+
+    def test_clean_rejects_self_parenting(self):
+        category = Category.objects.create(name="Fish", slug="fish")
+        category.parent = category
+
+        with self.assertRaises(ValidationError):
+            category.clean()
+
+    def test_clean_rejects_parenting_to_a_direct_child(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        cichlid = Category.objects.create(name="Cichlid", slug="cichlid", parent=fish)
+        fish.parent = cichlid
+
+        with self.assertRaises(ValidationError):
+            fish.clean()
+
+    def test_clean_rejects_parenting_to_a_deeper_descendant(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        cichlid = Category.objects.create(name="Cichlid", slug="cichlid", parent=fish)
+        full_moon = Category.objects.create(name="Full Moon", slug="full-moon", parent=cichlid)
+        fish.parent = full_moon
+
+        with self.assertRaises(ValidationError):
+            fish.clean()
+
+    def test_clean_allows_reparenting_to_an_unrelated_category(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        plants = Category.objects.create(name="Plants", slug="plants")
+        cichlid = Category.objects.create(name="Cichlid", slug="cichlid", parent=fish)
+        cichlid.parent = plants
+
+        cichlid.clean()  # must not raise
 
 
 class ProductModelTests(TestCase):
