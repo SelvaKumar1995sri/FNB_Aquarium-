@@ -5,6 +5,7 @@ import { apiClient } from "../../api/client";
 import Breadcrumbs from "../../components/public/Breadcrumbs";
 import CategoryGrid from "../../components/public/CategoryGrid";
 import ProductCard from "../../components/public/ProductCard";
+import { getAncestors } from "../../utils/categoryTree";
 
 const TOP_LEVEL_NAV_SLUGS = ["fish", "plants"];
 
@@ -52,16 +53,16 @@ export default function CategoryProducts({ fixedSlug, title }) {
       return [{ label: title }];
     }
     const currentCategory = categories.find((category) => category.slug === slug);
-    const parentCategory = currentCategory?.parent
-      ? categories.find((category) => category.id === currentCategory.parent)
-      : null;
-    if (parentCategory) {
-      return [
-        { label: parentCategory.name, to: `/category/${parentCategory.slug}` },
-        { label: currentCategory?.name || title },
-      ];
+    if (!currentCategory) {
+      // Category not found
+      return [{ label: title }];
     }
-    return [{ label: currentCategory?.name || title }];
+    const ancestors = getAncestors(currentCategory, categories);
+    const ancestorCrumbs = ancestors.map((ancestor) => ({
+      label: ancestor.name,
+      to: `/category/${ancestor.slug}`,
+    }));
+    return [...ancestorCrumbs, { label: currentCategory.name }];
   }, [categories, slug, title]);
 
   useEffect(() => {
