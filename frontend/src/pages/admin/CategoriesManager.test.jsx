@@ -74,4 +74,17 @@ describe("CategoriesManager", () => {
     await waitFor(() => expect(apiClient.delete).toHaveBeenCalled());
     expect(await screen.findByText(/category deleted/i)).toBeTruthy();
   });
+
+  it("shows a page-level error when deleting fails", async () => {
+    apiClient.delete.mockRejectedValueOnce({ response: { data: { detail: "Cannot delete." } } });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<CategoriesManager />);
+    await screen.findByText("fish");
+
+    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+
+    await waitFor(() => expect(apiClient.delete).toHaveBeenCalled());
+    expect(await screen.findByText("Cannot delete.")).toBeTruthy();
+    expect(screen.queryByText(/category deleted/i)).toBeNull();
+  });
 });

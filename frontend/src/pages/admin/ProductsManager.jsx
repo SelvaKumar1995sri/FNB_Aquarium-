@@ -21,6 +21,7 @@ export default function ProductsManager() {
   });
   const [editingSlug, setEditingSlug] = useState(null);
   const [formError, setFormError] = useState("");
+  const [listError, setListError] = useState("");
   const [uploadingFor, setUploadingFor] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -137,11 +138,11 @@ export default function ProductsManager() {
     }
     try {
       await apiClient.delete(`/products/${slug}/`);
-      setFormError("");
+      setListError("");
       load();
       setSuccessMessage("Product deleted.");
     } catch (error) {
-      setFormError(describeError(error, "Couldn't delete the product — please try again."));
+      setListError(describeError(error, "Couldn't delete the product — please try again."));
     }
   };
 
@@ -152,10 +153,10 @@ export default function ProductsManager() {
     setUploadingFor(productId);
     try {
       await apiClient.post("/product-images/", body);
-      setFormError("");
+      setListError("");
       load();
     } catch (error) {
-      setFormError(describeError(error, "Couldn't upload the image — please try again."));
+      setListError(describeError(error, "Couldn't upload the image — please try again."));
     } finally {
       setUploadingFor(null);
     }
@@ -164,10 +165,10 @@ export default function ProductsManager() {
   const handleImageDelete = async (imageId) => {
     try {
       await apiClient.delete(`/product-images/${imageId}/`);
-      setFormError("");
+      setListError("");
       load();
     } catch (error) {
-      setFormError(describeError(error, "Couldn't delete the image — please try again."));
+      setListError(describeError(error, "Couldn't delete the image — please try again."));
     }
   };
 
@@ -191,6 +192,7 @@ export default function ProductsManager() {
       {productsError && (
         <p className="text-red-600 mb-4">Couldn't load products — please try again later.</p>
       )}
+      {listError && <p className="text-red-600 mb-4">{listError}</p>}
       <table className="w-full text-left">
         <thead><tr><th>Name</th><th>Price</th><th>Stock</th><th>Images</th><th></th></tr></thead>
         <tbody>

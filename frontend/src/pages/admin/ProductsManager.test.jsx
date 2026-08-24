@@ -10,9 +10,20 @@ vi.mock("../../api/client", () => ({
 
 const CATEGORY = { id: 1, name: "Fish", parent: null };
 
-function mockInitialLoad() {
+const PRODUCT = {
+  id: 1,
+  name: "Discus",
+  slug: "discus",
+  category: 1,
+  price: "100",
+  stock_quantity: 10,
+  in_stock: true,
+  images: [{ id: 1, image: "https://example.com/discus.jpg", alt_text: "Discus" }],
+};
+
+function mockInitialLoad(products = []) {
   apiClient.get.mockImplementation((url) => {
-    if (url === "/products/") return Promise.resolve({ data: { results: [] } });
+    if (url === "/products/") return Promise.resolve({ data: { results: products } });
     if (url === "/categories/") return Promise.resolve({ data: { results: [CATEGORY] } });
     return Promise.reject(new Error(`unexpected GET ${url}`));
   });
@@ -61,6 +72,51 @@ describe("ProductsManager — list + modal", () => {
 
     expect(await screen.findByText(/product created/i)).toBeTruthy();
     expect(screen.queryByPlaceholderText("Name")).toBeNull();
+  });
+
+  it("shows a page-level error when deleting fails", async () => {
+    mockInitialLoad([PRODUCT]);
+    apiClient.delete.mockRejectedValueOnce({ response: { data: { detail: "Cannot delete." } } });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<ProductsManager />);
+    await screen.findByText("Discus");
+
+    fireEvent.click(screen.getByRole("button", { name: /^delete$/i }));
+
+    await waitFor(() => expect(apiClient.delete).toHaveBeenCalledWith("/products/discus/"));
+    expect(await screen.findByText("Cannot delete.")).toBeTruthy();
+    expect(screen.queryByText(/product deleted/i)).toBeNull();
+  });
+
+  it("shows a page-level error when an image upload fails", async () => {
+    mockInitialLoad([PRODUCT]);
+    apiClient.post.mockImplementation((url) => {
+      if (url === "/product-images/") {
+        return Promise.reject({ response: { data: { detail: "Image too large." } } });
+      }
+      return Promise.reject(new Error(`unexpected POST ${url}`));
+    });
+    render(<ProductsManager />);
+    await screen.findByText("Discus");
+
+    const file = new File(["contents"], "photo.png", { type: "image/png" });
+    const fileInput = document.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith("/product-images/", expect.anything()));
+    expect(await screen.findByText("Image too large.")).toBeTruthy();
+  });
+
+  it("shows a page-level error when an image delete fails", async () => {
+    mockInitialLoad([PRODUCT]);
+    apiClient.delete.mockRejectedValueOnce({ response: { data: { detail: "Cannot delete image." } } });
+    render(<ProductsManager />);
+    await screen.findByText("Discus");
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete image" }));
+
+    await waitFor(() => expect(apiClient.delete).toHaveBeenCalledWith("/product-images/1/"));
+    expect(await screen.findByText("Cannot delete image.")).toBeTruthy();
   });
 });
 

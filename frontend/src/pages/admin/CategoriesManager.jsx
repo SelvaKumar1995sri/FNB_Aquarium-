@@ -13,6 +13,7 @@ export default function CategoriesManager() {
   const [bannerImageFile, setBannerImageFile] = useState(null);
   const [editingSlug, setEditingSlug] = useState(null);
   const [formError, setFormError] = useState("");
+  const [listError, setListError] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
 
@@ -90,11 +91,11 @@ export default function CategoriesManager() {
     }
     try {
       await apiClient.delete(`/categories/${slug}/`);
-      setFormError("");
+      setListError("");
       load();
       setSuccessMessage("Category deleted.");
     } catch (error) {
-      setFormError(describeError(error, "Couldn't delete the category — please try again."));
+      setListError(describeError(error, "Couldn't delete the category — please try again."));
     }
   };
 
@@ -124,6 +125,7 @@ export default function CategoriesManager() {
       {categoriesError && (
         <p className="text-red-600 mb-4">Couldn't load categories — please try again later.</p>
       )}
+      {listError && <p className="text-red-600 mb-4">{listError}</p>}
       <table className="w-full text-left">
         <thead>
           <tr><th>Image</th><th>Name</th><th>Slug</th><th>Parent</th><th></th></tr>

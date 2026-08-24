@@ -11,6 +11,7 @@ export default function VideosManager() {
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState("");
+  const [listError, setListError] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
 
@@ -84,11 +85,11 @@ export default function VideosManager() {
   const handleDelete = async (id) => {
     try {
       await apiClient.delete(`/videos/${id}/`);
-      setFormError("");
+      setListError("");
       load();
       setSuccessMessage("Video deleted.");
     } catch (error) {
-      setFormError(describeError(error, "Couldn't delete the video — please try again."));
+      setListError(describeError(error, "Couldn't delete the video — please try again."));
     }
   };
 
@@ -107,6 +108,7 @@ export default function VideosManager() {
       {videosError && (
         <p className="text-red-600 mb-4">Couldn't load videos — please try again later.</p>
       )}
+      {listError && <p className="text-red-600 mb-4">{listError}</p>}
       <ul className="grid gap-2">
         {videos.map((video) => (
           <li

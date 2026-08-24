@@ -69,4 +69,16 @@ describe("VideosManager", () => {
     await waitFor(() => expect(apiClient.delete).toHaveBeenCalled());
     expect(await screen.findByText(/video deleted/i)).toBeTruthy();
   });
+
+  it("shows a page-level error when deleting fails", async () => {
+    apiClient.delete.mockRejectedValueOnce({ response: { data: { detail: "Cannot delete." } } });
+    render(<VideosManager />);
+    await screen.findByText("Tank tour");
+
+    fireEvent.click(screen.getByRole("button", { name: /delete/i }));
+
+    await waitFor(() => expect(apiClient.delete).toHaveBeenCalled());
+    expect(await screen.findByText("Cannot delete.")).toBeTruthy();
+    expect(screen.queryByText(/video deleted/i)).toBeNull();
+  });
 });
