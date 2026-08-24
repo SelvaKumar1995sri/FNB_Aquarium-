@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
+import Modal from "../../components/admin/Modal";
+import { buildIndentedOptions, getAncestors } from "../../utils/categoryTree";
 
 export default function CategoriesManager() {
   const [categories, setCategories] = useState([]);
@@ -11,6 +13,8 @@ export default function CategoriesManager() {
   const [bannerImageFile, setBannerImageFile] = useState(null);
   const [editingSlug, setEditingSlug] = useState(null);
   const [formError, setFormError] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const load = () =>
     apiClient
@@ -33,6 +37,11 @@ export default function CategoriesManager() {
     setFormError("");
   };
 
+  const openNewForm = () => {
+    resetForm();
+    setIsFormOpen(true);
+  };
+
   const startEdit = (category) => {
     setForm({
       name: category.name,
@@ -43,6 +52,12 @@ export default function CategoriesManager() {
     setBannerImageFile(null);
     setEditingSlug(category.slug);
     setFormError("");
+    setIsFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    resetForm();
   };
 
   const handleSubmit = async (event) => {
@@ -54,14 +69,16 @@ export default function CategoriesManager() {
     if (imageFile) body.append("image", imageFile);
     if (bannerImageFile) body.append("banner_image", bannerImageFile);
 
+    const wasEditing = Boolean(editingSlug);
     try {
       if (editingSlug) {
         await apiClient.patch(`/categories/${editingSlug}/`, body);
       } else {
         await apiClient.post("/categories/", body);
       }
-      resetForm();
+      closeForm();
       load();
+      setSuccessMessage(wasEditing ? "Category updated." : "Category created.");
     } catch (error) {
       setFormError(describeError(error, "Couldn't save the category — please check the fields and try again."));
     }
@@ -75,71 +92,36 @@ export default function CategoriesManager() {
       await apiClient.delete(`/categories/${slug}/`);
       setFormError("");
       load();
+      setSuccessMessage("Category deleted.");
     } catch (error) {
       setFormError(describeError(error, "Couldn't delete the category — please try again."));
     }
   };
 
+  const editingCategory = categories.find((category) => category.slug === editingSlug);
+  const parentOptions = buildIndentedOptions(categories, {
+    excludeIds: editingCategory ? [editingCategory.id] : [],
+  });
+
+  const pathFor = (category) => {
+    const ancestors = getAncestors(category, categories);
+    return [...ancestors, category].map((entry) => entry.name).join(" > ");
+  };
+
   return (
     <div className="px-4 py-8">
-      <h1 className="text-xl font-semibold mb-4">Categories</h1>
-      <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 mb-6">
-        <input
-          required
-          placeholder="Name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="border rounded px-3 py-2"
-        />
-        <input
-          required
-          placeholder="Slug"
-          value={form.slug}
-          onChange={(e) => setForm({ ...form, slug: e.target.value })}
-          className="border rounded px-3 py-2"
-        />
-        <select
-          value={form.parent}
-          onChange={(e) => setForm({ ...form, parent: e.target.value })}
-          className="border rounded px-3 py-2"
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold">Categories</h1>
+        <button
+          type="button"
+          onClick={openNewForm}
+          className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2"
         >
-          <option value="">None (top-level)</option>
-          {categories
-            .filter((c) => c.slug !== editingSlug)
-            .map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-        </select>
-        <label className="flex flex-col text-sm text-gray-600">
-          Image (grid tile thumbnail)
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImageFile(e.target.files[0] || null)}
-            className="border rounded px-3 py-2"
-          />
-        </label>
-        <label className="flex flex-col text-sm text-gray-600">
-          Banner image (shown on the category&apos;s own page)
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setBannerImageFile(e.target.files[0] || null)}
-            className="border rounded px-3 py-2"
-          />
-        </label>
-        <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">
-          {editingSlug ? "Save Changes" : "Add"}
+          + New Category
         </button>
-        {editingSlug && (
-          <button type="button" onClick={resetForm} className="border rounded px-4 py-2">
-            Cancel
-          </button>
-        )}
-      </form>
-      {formError && <p className="text-red-600 mb-4">{formError}</p>}
+      </div>
       {categoriesError && (
-        <p className="text-red-600">Couldn't load categories — please try again later.</p>
+        <p className="text-red-600 mb-4">Couldn't load categories — please try again later.</p>
       )}
       <table className="w-full text-left">
         <thead>
@@ -155,7 +137,7 @@ export default function CategoriesManager() {
               </td>
               <td>{category.name}</td>
               <td>{category.slug}</td>
-              <td>{categories.find((c) => c.id === category.parent)?.name || "—"}</td>
+              <td>{category.parent ? pathFor(categories.find((c) => c.id === category.parent)) : "—"}</td>
               <td className="flex gap-2">
                 <button onClick={() => startEdit(category)} className="text-blue-600">Edit</button>
                 <button onClick={() => handleDelete(category.slug)} className="text-red-600">Delete</button>
@@ -164,6 +146,77 @@ export default function CategoriesManager() {
           ))}
         </tbody>
       </table>
+
+      {isFormOpen && (
+        <Modal title={editingSlug ? "Edit Category" : "New Category"} onClose={closeForm}>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+            <input
+              required
+              placeholder="Name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="border rounded px-3 py-2"
+            />
+            <input
+              required
+              placeholder="Slug"
+              value={form.slug}
+              onChange={(e) => setForm({ ...form, slug: e.target.value })}
+              className="border rounded px-3 py-2"
+            />
+            <select
+              value={form.parent}
+              onChange={(e) => setForm({ ...form, parent: e.target.value })}
+              className="border rounded px-3 py-2"
+            >
+              <option value="">None (top-level)</option>
+              {parentOptions.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+            <label className="flex flex-col text-sm text-gray-600">
+              Image (grid tile thumbnail)
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files[0] || null)}
+                className="border rounded px-3 py-2"
+              />
+            </label>
+            <label className="flex flex-col text-sm text-gray-600">
+              Banner image (shown on the category&apos;s own page)
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setBannerImageFile(e.target.files[0] || null)}
+                className="border rounded px-3 py-2"
+              />
+            </label>
+            {formError && <p className="text-red-600">{formError}</p>}
+            <div className="flex gap-2">
+              <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">
+                {editingSlug ? "Save Changes" : "Add"}
+              </button>
+              <button type="button" onClick={closeForm} className="border rounded px-4 py-2">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {successMessage && (
+        <Modal title="Success" onClose={() => setSuccessMessage(null)}>
+          <p className="mb-4">{successMessage}</p>
+          <button
+            type="button"
+            onClick={() => setSuccessMessage(null)}
+            className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2"
+          >
+            OK
+          </button>
+        </Modal>
+      )}
     </div>
   );
 }
