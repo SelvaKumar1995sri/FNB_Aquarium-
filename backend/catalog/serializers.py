@@ -1,3 +1,5 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
+
 from rest_framework import serializers
 
 from .models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
@@ -7,6 +9,16 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["id", "name", "slug", "parent", "image", "banner_image", "description", "order"]
+
+    def validate(self, attrs):
+        instance = Category(pk=self.instance.pk if self.instance else None)
+        for field, value in attrs.items():
+            setattr(instance, field, value)
+        try:
+            instance.clean()
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({"parent": exc.messages})
+        return attrs
 
 
 class ProductImageSerializer(serializers.ModelSerializer):

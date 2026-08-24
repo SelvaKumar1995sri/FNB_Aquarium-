@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 
 from .models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
+from .pagination import CategoryPagination
 from .permissions import IsStaffOrReadOnly
 from .serializers import (
     BlogPostSerializer, CategorySerializer, PortfolioItemSerializer,
@@ -17,6 +18,7 @@ from .serializers import (
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsStaffOrReadOnly]
+    pagination_class = CategoryPagination
     lookup_field = "slug"
 
     def get_queryset(self):

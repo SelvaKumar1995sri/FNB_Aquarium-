@@ -255,6 +255,62 @@ class CategoryWritePermissionTests(APITestCase):
         self.assertTrue(Category.objects.filter(slug="fish").exists())
 
 
+class CategoryCyclePreventionAPITests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(username="cycle-staff", password="pw12345", is_staff=True)
+        self.client.force_authenticate(user=self.staff)
+
+    def test_rejects_setting_parent_to_a_descendant(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        cichlid = Category.objects.create(name="Cichlid", slug="cichlid", parent=fish)
+
+        response = self.client.patch(f"/api/v1/categories/{fish.slug}/", {"parent": cichlid.id})
+
+        self.assertEqual(response.status_code, 400)
+        fish.refresh_from_db()
+        self.assertIsNone(fish.parent)
+
+    def test_rejects_self_parenting(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+
+        response = self.client.patch(f"/api/v1/categories/{fish.slug}/", {"parent": fish.id})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_allows_reparenting_to_an_unrelated_category(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+        plants = Category.objects.create(name="Plants", slug="plants")
+        cichlid = Category.objects.create(name="Cichlid", slug="cichlid", parent=fish)
+
+        response = self.client.patch(f"/api/v1/categories/{cichlid.slug}/", {"parent": plants.id})
+
+        self.assertEqual(response.status_code, 200)
+        cichlid.refresh_from_db()
+        self.assertEqual(cichlid.parent_id, plants.id)
+
+    def test_allows_creating_a_normal_subcategory(self):
+        fish = Category.objects.create(name="Fish", slug="fish")
+
+        response = self.client.post(
+            "/api/v1/categories/", {"name": "Cichlid", "slug": "cichlid", "parent": fish.id}
+        )
+
+        self.assertEqual(response.status_code, 201)
+
+
+class CategoryPaginationTests(APITestCase):
+    def test_category_list_is_not_truncated_past_the_default_page_size(self):
+        for i in range(25):
+            Category.objects.create(name=f"Category {i}", slug=f"category-{i}")
+
+        response = self.client.get("/api/v1/categories/")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 25)
+        self.assertEqual(len(data["results"]), 25)
+
+
 class ProductCreateDuplicateDetectionTests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(username="dup-staff", password="pw12345", is_staff=True)
