@@ -16,7 +16,8 @@ Reachable at `http://<ec2-public-ip>/`.
 ```
 Browser ──HTTP──▶ EC2 instance (t2.micro/t3.micro, free tier)
                     ├─ frontend container (nginx: serves React build,
-                    │   proxies /api/, /admin/, /static/, /media/)
+                    │   proxies /api/, /django-admin/, /static/, /media/;
+                    │   /admin/ falls through to the React SPA)
                     ├─ backend container (gunicorn + Django, port 8000)
                     └─ db container (Postgres 16)
 ```
@@ -181,7 +182,8 @@ Plain `http://<EC2_PUBLIC_IP>/` redirects there automatically.
 
 What changed:
 - `frontend/Caddyfile` replaces `frontend/nginx.conf` (deleted) — same
-  routing (`/static/`, `/media/`, `/api/`, `/admin/` proxied to `backend:8000`
+  routing (`/static/`, `/media/`, `/api/`, `/django-admin/` proxied to
+  `backend:8000`; `/admin/` now falls through to the SPA catch-all instead
   or served off the shared media volume, SPA fallback to `index.html`), plus
   a redirect block for plain-IP HTTP visitors.
 - `frontend/Dockerfile` final stage is `caddy:2-alpine` instead of

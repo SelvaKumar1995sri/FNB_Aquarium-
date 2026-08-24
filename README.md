@@ -80,7 +80,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Backend runs at `http://localhost:8000` — API base: `http://localhost:8000/api/v1/`, Django admin at `/admin/`.
+Backend runs at `http://localhost:8000` — API base: `http://localhost:8000/api/v1/`, Django admin at `/django-admin/`.
 
 ### 3. Frontend setup
 

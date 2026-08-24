@@ -7,7 +7,7 @@ from accounts.views import RegisterView
 from core.views import health_check
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("django-admin/", admin.site.urls),
     path("api/v1/health/", health_check),
     path("api/v1/auth/", include("core.auth_urls")),
     path("api/v1/auth/register/", RegisterView.as_view(), name="register"),

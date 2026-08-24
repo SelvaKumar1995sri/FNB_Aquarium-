@@ -23,7 +23,7 @@ fnbaqua.13.50.60.19.nip.io, http://fnbaqua.13.50.60.19.nip.io, http://13.50.60.1
 		reverse_proxy backend:8000
 	}
 
-	handle /admin/* {
+	handle /django-admin/* {
 		reverse_proxy backend:8000
 	}
 
