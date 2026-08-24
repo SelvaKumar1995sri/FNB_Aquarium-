@@ -161,16 +161,43 @@ Also copy `backend/media/` (product images) the same way via `scp -r` into
 the running backend container's volume, or just re-upload a few images
 through the admin panel.
 
-## 7. Optional: free HTTPS without buying a domain
+## 7. HTTPS without buying a domain (already wired up)
 
-If Razorpay's webhook setup insists on `https://`, you can get a real,
-free TLS certificate **without owning a domain** using a wildcard DNS
-service like `nip.io`, which resolves `<any-text>.<your-ip>.nip.io` straight
-back to your IP. Swap the `frontend` container's nginx for
-[Caddy](https://caddyserver.com/), which obtains and renews Let's Encrypt
-certificates automatically given just a hostname — ask me to wire this up if
-you hit the http-webhook rejection; it's a ~10-minute change (new Caddyfile,
-swap one line in `frontend/Dockerfile`) and stays $0.
+Chrome's "Always use secure connections" default auto-upgrades address-bar
+navigation to `https://`. Since this box only had port 80 open, that upgrade
+attempt hit a dead port 443 and timed out — the site looked "down" in Chrome
+even though the HTTP server was completely healthy. Fixed by adding real,
+free HTTPS via a wildcard DNS service (`nip.io`, which resolves
+`<any-text>.<your-ip>.nip.io` straight back to your IP) and swapping the
+`frontend` container's nginx for [Caddy](https://caddyserver.com/), which
+obtains and renews Let's Encrypt certificates automatically given just a
+hostname. This also satisfies Razorpay's `https://` webhook requirement.
+Stays $0 — Caddy, Let's Encrypt, and nip.io are all free; see the cost
+section above for the only thing that's ever billed (the instance itself,
+past the 12-month free-tier window).
+
+**Site is now at:** `https://fnbaqua.13.50.60.19.nip.io/`
+Plain `http://<EC2_PUBLIC_IP>/` redirects there automatically.
+
+What changed:
+- `frontend/Caddyfile` replaces `frontend/nginx.conf` (deleted) — same
+  routing (`/static/`, `/media/`, `/api/`, `/admin/` proxied to `backend:8000`
+  or served off the shared media volume, SPA fallback to `index.html`), plus
+  a redirect block for plain-IP HTTP visitors.
+- `frontend/Dockerfile` final stage is `caddy:2-alpine` instead of
+  `nginx:alpine`.
+- `docker-compose.yml` — `frontend` now publishes `443:443` too, and gets
+  `caddy_data`/`caddy_config` volumes so the Let's Encrypt cert persists
+  across container restarts (without this, restarting the container would
+  re-request a cert every time and risk hitting Let's Encrypt's rate limit).
+- `backend/.env` (on the EC2 instance, not in git) needs the nip.io hostname
+  added to `ALLOWED_HOSTS` and `CORS_ALLOWED_ORIGINS` — see
+  `backend/.env.docker.example` for the exact format.
+
+**One manual step required** — the security group only allowed port 80
+inbound (§1). Add an inbound rule for **HTTPS (443)**, source
+**Anywhere (0.0.0.0/0)**, the same way §1 added the port 80 rule, or Caddy's
+Let's Encrypt handshake can't complete.
 
 ## 8. Share the link with testers
 

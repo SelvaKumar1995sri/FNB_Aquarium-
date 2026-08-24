@@ -1,0 +1,37 @@
+fnbaqua.13.50.60.19.nip.io {
+	encode gzip
+
+	# Django serves this itself via whitenoise, regardless of DEBUG.
+	handle /static/* {
+		reverse_proxy backend:8000
+	}
+
+	# Django only serves /media/ when DEBUG=True, so in staging Caddy reads
+	# it directly off the volume shared with the backend container instead.
+	handle_path /media/* {
+		root * /media
+		file_server
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	handle /admin/* {
+		reverse_proxy backend:8000
+	}
+
+	# React Router SPA — unknown paths fall back to index.html.
+	handle {
+		root * /usr/share/caddy/html
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# Plain-IP visitors (no HTTPS cert exists for a bare IP) get redirected to
+# the HTTPS hostname above instead of hanging on a browser HTTPS-upgrade
+# attempt to a port nothing answers on.
+http://13.50.60.19 {
+	redir https://fnbaqua.13.50.60.19.nip.io{uri} permanent
+}
