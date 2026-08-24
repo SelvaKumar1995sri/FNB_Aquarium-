@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
+import Modal from "../../components/admin/Modal";
+import { buildIndentedOptions } from "../../utils/categoryTree";
 
 export default function ProductsManager() {
   const [products, setProducts] = useState([]);
@@ -20,6 +22,8 @@ export default function ProductsManager() {
   const [editingSlug, setEditingSlug] = useState(null);
   const [formError, setFormError] = useState("");
   const [uploadingFor, setUploadingFor] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const load = () =>
     apiClient
@@ -55,6 +59,11 @@ export default function ProductsManager() {
     setFormError("");
   };
 
+  const openNewForm = () => {
+    resetForm();
+    setIsFormOpen(true);
+  };
+
   const startEdit = (product) => {
     setForm({
       name: product.name,
@@ -67,6 +76,12 @@ export default function ProductsManager() {
     });
     setEditingSlug(product.slug);
     setFormError("");
+    setIsFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    resetForm();
   };
 
   const handleSubmit = async (event) => {
@@ -77,14 +92,16 @@ export default function ProductsManager() {
       price: Number(form.price),
       stock_quantity: Number(form.stock_quantity),
     };
+    const wasEditing = Boolean(editingSlug);
     try {
       if (editingSlug) {
         await apiClient.patch(`/products/${editingSlug}/`, payload);
       } else {
         await apiClient.post("/products/", payload);
       }
-      resetForm();
+      closeForm();
       load();
+      setSuccessMessage(wasEditing ? "Product updated." : "Product created.");
     } catch (error) {
       if (!editingSlug && error.response?.status === 409) {
         const existing = error.response.data.existing_product;
@@ -101,8 +118,9 @@ export default function ProductsManager() {
         if (confirmed) {
           try {
             await apiClient.post(`/products/${existing.slug}/add-stock/`, { quantity: enteredQuantity });
-            resetForm();
+            closeForm();
             load();
+            setSuccessMessage("Stock added.");
           } catch (addStockError) {
             setFormError(describeError(addStockError, "Couldn't add stock to the existing product — please try again."));
           }
@@ -121,6 +139,7 @@ export default function ProductsManager() {
       await apiClient.delete(`/products/${slug}/`);
       setFormError("");
       load();
+      setSuccessMessage("Product deleted.");
     } catch (error) {
       setFormError(describeError(error, "Couldn't delete the product — please try again."));
     }
@@ -152,53 +171,25 @@ export default function ProductsManager() {
     }
   };
 
+  const categoryOptions = buildIndentedOptions(categories);
+
   return (
     <div className="px-4 py-8">
-      <h1 className="text-xl font-semibold mb-4">Products</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold">Products</h1>
+        <button
+          type="button"
+          onClick={openNewForm}
+          className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2"
+        >
+          + New Product
+        </button>
+      </div>
       {categoriesError && (
-        <p className="text-red-600">Couldn't load categories — please try again later.</p>
+        <p className="text-red-600 mb-4">Couldn't load categories — please try again later.</p>
       )}
-      <form onSubmit={handleSubmit} className="grid gap-2 mb-6 max-w-md">
-        <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border rounded px-3 py-2" />
-        <input required placeholder="Slug" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="border rounded px-3 py-2" />
-        <select required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="border rounded px-3 py-2">
-          <option value="">Select category</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>{category.name}</option>
-          ))}
-        </select>
-        <input required type="number" placeholder="Price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="border rounded px-3 py-2" />
-        <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="border rounded px-3 py-2" />
-        <label className="flex flex-col text-sm text-gray-600">
-          Stock quantity
-          <input
-            required
-            type="number"
-            min="0"
-            placeholder="Stock quantity"
-            value={form.stock_quantity}
-            onChange={(e) => setForm({ ...form, stock_quantity: e.target.value })}
-            className="border rounded px-3 py-2"
-          />
-        </label>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={form.is_featured} onChange={(e) => setForm({ ...form, is_featured: e.target.checked })} />
-          Featured
-        </label>
-        <div className="flex gap-2">
-          <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">
-            {editingSlug ? "Save Changes" : "Add Product"}
-          </button>
-          {editingSlug && (
-            <button type="button" onClick={resetForm} className="border rounded px-4 py-2">
-              Cancel
-            </button>
-          )}
-        </div>
-      </form>
-      {formError && <p className="text-red-600 mb-4">{formError}</p>}
       {productsError && (
-        <p className="text-red-600">Couldn't load products — please try again later.</p>
+        <p className="text-red-600 mb-4">Couldn't load products — please try again later.</p>
       )}
       <table className="w-full text-left">
         <thead><tr><th>Name</th><th>Price</th><th>Stock</th><th>Images</th><th></th></tr></thead>
@@ -237,6 +228,61 @@ export default function ProductsManager() {
           ))}
         </tbody>
       </table>
+
+      {isFormOpen && (
+        <Modal title={editingSlug ? "Edit Product" : "New Product"} onClose={closeForm}>
+          <form onSubmit={handleSubmit} className="grid gap-2">
+            <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border rounded px-3 py-2" />
+            <input required placeholder="Slug" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="border rounded px-3 py-2" />
+            <select required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="border rounded px-3 py-2">
+              <option value="">Select category</option>
+              {categoryOptions.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+            <input required type="number" placeholder="Price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="border rounded px-3 py-2" />
+            <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="border rounded px-3 py-2" />
+            <label className="flex flex-col text-sm text-gray-600">
+              Stock quantity
+              <input
+                required
+                type="number"
+                min="0"
+                placeholder="Stock quantity"
+                value={form.stock_quantity}
+                onChange={(e) => setForm({ ...form, stock_quantity: e.target.value })}
+                className="border rounded px-3 py-2"
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={form.is_featured} onChange={(e) => setForm({ ...form, is_featured: e.target.checked })} />
+              Featured
+            </label>
+            {formError && <p className="text-red-600">{formError}</p>}
+            <div className="flex gap-2">
+              <button type="submit" className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2">
+                {editingSlug ? "Save Changes" : "Add Product"}
+              </button>
+              <button type="button" onClick={closeForm} className="border rounded px-4 py-2">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {successMessage && (
+        <Modal title="Success" onClose={() => setSuccessMessage(null)}>
+          <p className="mb-4">{successMessage}</p>
+          <button
+            type="button"
+            onClick={() => setSuccessMessage(null)}
+            className="bg-brand-forest hover:bg-brand-forest/90 text-white rounded px-4 py-2"
+          >
+            OK
+          </button>
+        </Modal>
+      )}
     </div>
   );
 }

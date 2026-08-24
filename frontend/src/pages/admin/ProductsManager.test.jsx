@@ -8,7 +8,7 @@ vi.mock("../../api/client", () => ({
   apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
 
-const CATEGORY = { id: 1, name: "Fish" };
+const CATEGORY = { id: 1, name: "Fish", parent: null };
 
 function mockInitialLoad() {
   apiClient.get.mockImplementation((url) => {
@@ -18,7 +18,13 @@ function mockInitialLoad() {
   });
 }
 
+async function openForm() {
+  fireEvent.click(screen.getByRole("button", { name: /new product/i }));
+  await screen.findByRole("combobox");
+}
+
 async function fillAndSubmit({ name = "Discus", slug = "discus", price = "100", stock = "10" } = {}) {
+  await openForm();
   fireEvent.change(screen.getByPlaceholderText("Name"), { target: { value: name } });
   fireEvent.change(screen.getByPlaceholderText("Slug"), { target: { value: slug } });
   fireEvent.change(screen.getByRole("combobox"), { target: { value: String(CATEGORY.id) } });
@@ -27,6 +33,36 @@ async function fillAndSubmit({ name = "Discus", slug = "discus", price = "100", 
   fireEvent.click(screen.getByRole("button", { name: /add product/i }));
   await waitFor(() => expect(apiClient.post).toHaveBeenCalled());
 }
+
+describe("ProductsManager — list + modal", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockInitialLoad();
+  });
+
+  afterEach(() => cleanup());
+
+  it("shows the list without a form until 'New Product' is clicked", async () => {
+    render(<ProductsManager />);
+    await screen.findByRole("button", { name: /new product/i });
+    expect(screen.queryByPlaceholderText("Name")).toBeNull();
+
+    await openForm();
+
+    expect(screen.getByPlaceholderText("Name")).toBeTruthy();
+  });
+
+  it("creates a product and shows a success popup", async () => {
+    apiClient.post.mockResolvedValueOnce({ data: {} });
+    render(<ProductsManager />);
+    await screen.findByRole("button", { name: /new product/i });
+
+    await fillAndSubmit();
+
+    expect(await screen.findByText(/product created/i)).toBeTruthy();
+    expect(screen.queryByPlaceholderText("Name")).toBeNull();
+  });
+});
 
 describe("ProductsManager — duplicate-product restock flow", () => {
   beforeEach(() => {
@@ -39,7 +75,7 @@ describe("ProductsManager — duplicate-product restock flow", () => {
   it("creates a product normally when there is no name/category conflict", async () => {
     apiClient.post.mockResolvedValueOnce({ data: {} });
     render(<ProductsManager />);
-    await screen.findByRole("combobox");
+    await screen.findByRole("button", { name: /new product/i });
 
     await fillAndSubmit();
 
@@ -63,7 +99,7 @@ describe("ProductsManager — duplicate-product restock flow", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     render(<ProductsManager />);
-    await screen.findByRole("combobox");
+    await screen.findByRole("button", { name: /new product/i });
     await fillAndSubmit({ stock: "10" });
 
     expect(confirmSpy).toHaveBeenCalledWith(
@@ -72,6 +108,7 @@ describe("ProductsManager — duplicate-product restock flow", () => {
     await waitFor(() =>
       expect(apiClient.post).toHaveBeenCalledWith(`/products/${existing.slug}/add-stock/`, { quantity: 10 })
     );
+    expect(await screen.findByText(/stock added/i)).toBeTruthy();
   });
 
   it("does nothing further when the duplicate confirm is cancelled", async () => {
@@ -85,7 +122,7 @@ describe("ProductsManager — duplicate-product restock flow", () => {
     vi.spyOn(window, "confirm").mockReturnValue(false);
 
     render(<ProductsManager />);
-    await screen.findByRole("combobox");
+    await screen.findByRole("button", { name: /new product/i });
     await fillAndSubmit({ stock: "10" });
 
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledTimes(1));
@@ -106,7 +143,7 @@ describe("ProductsManager — duplicate-product restock flow", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
 
     render(<ProductsManager />);
-    await screen.findByRole("combobox");
+    await screen.findByRole("button", { name: /new product/i });
     await fillAndSubmit({ stock: "10" });
 
     expect(await screen.findByText("Something went wrong.")).toBeTruthy();
@@ -123,7 +160,7 @@ describe("ProductsManager — duplicate-product restock flow", () => {
     const confirmSpy = vi.spyOn(window, "confirm");
 
     render(<ProductsManager />);
-    await screen.findByRole("combobox");
+    await screen.findByRole("button", { name: /new product/i });
     await fillAndSubmit({ stock: "0" });
 
     expect(confirmSpy).not.toHaveBeenCalled();
