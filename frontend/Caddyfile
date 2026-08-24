@@ -1,4 +1,10 @@
-fnbaqua.13.50.60.19.nip.io {
+# Serve the same content on plain HTTP (port 80, bare IP or hostname) AND
+# HTTPS (port 443, hostname only). Do NOT force-redirect HTTP -> HTTPS here:
+# if port 443 ever becomes unreachable (security group misconfigured, ISP/
+# firewall blocking it, etc.) a redirect would break plain HTTP too, which
+# worked fine before HTTPS was added. Explicit http:// entries below stop
+# Caddy's automatic-HTTPS redirect from kicking in for this hostname.
+fnbaqua.13.50.60.19.nip.io, http://fnbaqua.13.50.60.19.nip.io, http://13.50.60.19 {
 	encode gzip
 
 	# Django serves this itself via whitenoise, regardless of DEBUG.
@@ -27,11 +33,4 @@ fnbaqua.13.50.60.19.nip.io {
 		try_files {path} /index.html
 		file_server
 	}
-}
-
-# Plain-IP visitors (no HTTPS cert exists for a bare IP) get redirected to
-# the HTTPS hostname above instead of hanging on a browser HTTPS-upgrade
-# attempt to a port nothing answers on.
-http://13.50.60.19 {
-	redir https://fnbaqua.13.50.60.19.nip.io{uri} permanent
 }
