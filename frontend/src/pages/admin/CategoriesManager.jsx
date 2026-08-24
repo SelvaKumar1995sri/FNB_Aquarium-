@@ -104,6 +104,7 @@ export default function CategoriesManager() {
   });
 
   const pathFor = (category) => {
+    if (!category) return "—";
     const ancestors = getAncestors(category, categories);
     return [...ancestors, category].map((entry) => entry.name).join(" > ");
   };
@@ -137,7 +138,7 @@ export default function CategoriesManager() {
               </td>
               <td>{category.name}</td>
               <td>{category.slug}</td>
-              <td>{category.parent ? pathFor(categories.find((c) => c.id === category.parent)) : "—"}</td>
+              <td>{pathFor(categories.find((c) => c.id === category.parent))}</td>
               <td className="flex gap-2">
                 <button onClick={() => startEdit(category)} className="text-blue-600">Edit</button>
                 <button onClick={() => handleDelete(category.slug)} className="text-red-600">Delete</button>
