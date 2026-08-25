@@ -12,6 +12,7 @@
 // (or where it isn't enabled), jsdom's own localStorage already works and
 // this is a no-op.
 import { JSDOM } from "jsdom";
+import "@testing-library/jest-dom";
 
 if (typeof globalThis.localStorage === "undefined" || typeof globalThis.localStorage.clear !== "function") {
   const { localStorage } = new JSDOM("", { url: "http://localhost" }).window;
