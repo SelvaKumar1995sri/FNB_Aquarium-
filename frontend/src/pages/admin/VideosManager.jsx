@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
-import Modal from "../../components/admin/Modal";
+import Modal from "../../components/common/Modal";
 
 export default function VideosManager() {
   const [videos, setVideos] = useState([]);
