@@ -4,6 +4,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useAdminNotifications } from "../../context/AdminNotificationsContext";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
+import { useCustomerNotifications } from "../../context/CustomerNotificationsContext";
 
 const NAV_LINKS = [
   { to: "/fish", label: "Fish" },
@@ -54,10 +55,17 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifSnapshot, setNotifSnapshot] = useState({ orders: [], inquiries: [] });
+  const [isCustomerNotifOpen, setIsCustomerNotifOpen] = useState(false);
+  const [customerNotifSnapshot, setCustomerNotifSnapshot] = useState([]);
   const { isAuthenticated, isStaff, profile, logout } = useAuth();
   const isCustomerAuthenticated = isAuthenticated && !isStaff;
   const { itemCount } = useCart();
   const { unreadOrdersCount, unreadInquiriesCount, latestOrders, latestInquiries, markSeen } = useAdminNotifications();
+  const {
+    unreadCount: customerUnreadCount,
+    notifications: customerNotifications,
+    markRead: markCustomerNotificationsRead,
+  } = useCustomerNotifications();
 
   const totalUnread = unreadOrdersCount + unreadInquiriesCount;
   const sidebarBadgeCounts = {
@@ -81,6 +89,15 @@ export default function Header() {
     }
     setIsNotifOpen(opening);
     if (opening && totalUnread > 0) markSeen();
+  };
+
+  const toggleCustomerNotifDropdown = () => {
+    const opening = !isCustomerNotifOpen;
+    if (opening) {
+      setCustomerNotifSnapshot(customerNotifications);
+    }
+    setIsCustomerNotifOpen(opening);
+    if (opening && customerUnreadCount > 0) markCustomerNotificationsRead();
   };
 
   return (
@@ -131,6 +148,47 @@ export default function Header() {
               >
                 Hi, {profile?.name?.split(" ")[0] || "there"}
               </Link>
+            )}
+            {isCustomerAuthenticated && (
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label={`Notifications, ${customerUnreadCount} unread`}
+                  className="relative p-2 hover:text-brand-aqua"
+                  onClick={toggleCustomerNotifDropdown}
+                >
+                  <BellIcon className="h-5 w-5" />
+                  {customerUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
+                      {customerUnreadCount > 9 ? "9+" : customerUnreadCount}
+                    </span>
+                  )}
+                </button>
+                {isCustomerNotifOpen && (
+                  <div className="absolute right-0 mt-2 w-72 bg-white text-brand-dark rounded-lg shadow-xl border z-50 max-h-96 overflow-y-auto">
+                    <div className="p-3 border-b font-semibold text-sm">Notifications</div>
+                    {customerNotifSnapshot.length === 0 && (
+                      <p className="p-3 text-sm text-gray-500">No new notifications.</p>
+                    )}
+                    {customerNotifSnapshot.map((notification) =>
+                      notification.product_slug ? (
+                        <Link
+                          key={notification.id}
+                          to={`/product/${notification.product_slug}`}
+                          onClick={() => setIsCustomerNotifOpen(false)}
+                          className="block p-3 text-sm border-b hover:bg-gray-50"
+                        >
+                          {notification.message}
+                        </Link>
+                      ) : (
+                        <p key={notification.id} className="p-3 text-sm border-b">
+                          {notification.message}
+                        </p>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
             )}
             {isAuthenticated && isStaff && (
               <div className="relative">
