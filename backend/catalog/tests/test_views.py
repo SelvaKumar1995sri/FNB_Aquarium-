@@ -462,6 +462,45 @@ class ProductAddStockActionTests(APITestCase):
         self.assertEqual(self.product.stock_quantity, 5)
 
 
+class ProductNoteSpecificationTests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(username="note-staff", password="pw12345", is_staff=True)
+        self.category = Category.objects.create(name="Fish", slug="fish")
+
+    def test_note_and_specification_default_to_blank(self):
+        Product.objects.create(name="Discus", slug="discus", category=self.category, price=1200)
+
+        response = self.client.get("/api/v1/products/discus/")
+
+        data = response.json()
+        self.assertEqual(data["note"], "")
+        self.assertEqual(data["specification"], "")
+
+    def test_creating_a_product_without_note_or_specification_succeeds(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.post("/api/v1/products/", {
+            "name": "Discus", "slug": "discus", "category": self.category.id,
+            "price": 1200, "stock_quantity": 5,
+        })
+
+        self.assertEqual(response.status_code, 201)
+
+    def test_staff_can_set_note_and_specification_via_edit(self):
+        product = Product.objects.create(name="Discus", slug="discus", category=self.category, price=1200)
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/products/{product.slug}/", {
+            "note": "Free home delivery for this product",
+            "specification": "**Tetra Bits** is great.\n- Bullet one\n- Bullet two",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        product.refresh_from_db()
+        self.assertEqual(product.note, "Free home delivery for this product")
+        self.assertIn("Bullet one", product.specification)
+
+
 class ProductImageWritePermissionTests(APITestCase):
     """
     ProductImageViewSet uses IsAdminUser (per task-5-brief.md Step 4 and the

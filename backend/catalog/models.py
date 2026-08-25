@@ -43,6 +43,8 @@ class Product(models.Model):
     slug = models.SlugField(max_length=210, unique=True)
     category = models.ForeignKey(Category, related_name="products", on_delete=models.CASCADE)
     description = models.TextField(blank=True)
+    note = models.TextField(blank=True, default="")
+    specification = models.TextField(blank=True, default="")
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.PositiveIntegerField(default=0)
     is_featured = models.BooleanField(default=False)
