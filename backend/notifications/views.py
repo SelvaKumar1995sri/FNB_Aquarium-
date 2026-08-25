@@ -1,14 +1,16 @@
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import status
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from catalog.models import Product
 from inquiries.models import Inquiry
 from orders.models import Order
 
-from .models import AdminNotificationState
+from .models import AdminNotificationState, CustomerNotification, StockAlertSubscription
 
 LATEST_LIMIT = 5
 
@@ -81,4 +83,47 @@ class AdminNotificationsSeenView(APIView):
         state, _ = AdminNotificationState.objects.get_or_create(user=request.user)
         state.last_seen_at = seen_up_to
         state.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StockAlertSubscribeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        product = get_object_or_404(Product, pk=request.data.get("product"))
+        if product.in_stock:
+            return Response({"detail": "This product is already in stock."}, status=status.HTTP_400_BAD_REQUEST)
+        StockAlertSubscription.objects.update_or_create(
+            user=request.user, product=product, defaults={"notified_at": None}
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CustomerNotificationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        queryset = CustomerNotification.objects.filter(user=request.user)
+        unread_count = queryset.filter(read_at__isnull=True).count()
+        latest = queryset.select_related("product")[:20]
+        return Response({
+            "unread_count": unread_count,
+            "notifications": [
+                {
+                    "id": notification.id,
+                    "message": notification.message,
+                    "product_slug": notification.product.slug if notification.product else None,
+                    "created_at": notification.created_at,
+                    "read_at": notification.read_at,
+                }
+                for notification in latest
+            ],
+        })
+
+
+class CustomerNotificationsMarkReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        CustomerNotification.objects.filter(user=request.user, read_at__isnull=True).update(read_at=timezone.now())
         return Response(status=status.HTTP_204_NO_CONTENT)

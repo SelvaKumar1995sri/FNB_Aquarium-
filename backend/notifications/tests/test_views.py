@@ -1,8 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import Address
+from catalog.models import Category, Product
 from inquiries.models import Inquiry
+from notifications.models import CustomerNotification, StockAlertSubscription
 from orders.models import Order
 
 User = get_user_model()
@@ -166,3 +169,105 @@ class AdminNotificationsViewTests(APITestCase):
 
         response = self.client.get("/api/v1/admin/notifications/")
         self.assertEqual(response.json()["unread_orders_count"], 0)
+
+
+class StockAlertSubscribeViewTests(APITestCase):
+    def setUp(self):
+        self.customer = User.objects.create_user(username="a@example.com", password="pw12345678")
+        self.category = Category.objects.create(name="Fish", slug="fish")
+        self.product = Product.objects.create(
+            name="Discus", slug="discus", category=self.category, price=1200, stock_quantity=0,
+        )
+
+    def test_anonymous_cannot_subscribe(self):
+        response = self.client.post("/api/v1/notifications/stock-alerts/", {"product": self.product.id})
+        self.assertEqual(response.status_code, 401)
+
+    def test_subscribing_to_an_out_of_stock_product_succeeds(self):
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.post("/api/v1/notifications/stock-alerts/", {"product": self.product.id})
+
+        self.assertEqual(response.status_code, 204)
+        self.assertTrue(
+            StockAlertSubscription.objects.filter(
+                user=self.customer, product=self.product, notified_at__isnull=True
+            ).exists()
+        )
+
+    def test_subscribing_to_an_in_stock_product_is_rejected(self):
+        self.product.stock_quantity = 5
+        self.product.save()
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.post("/api/v1/notifications/stock-alerts/", {"product": self.product.id})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_resubscribing_after_being_notified_reactivates_the_subscription(self):
+        StockAlertSubscription.objects.create(user=self.customer, product=self.product, notified_at=timezone.now())
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.post("/api/v1/notifications/stock-alerts/", {"product": self.product.id})
+
+        self.assertEqual(response.status_code, 204)
+        subscription = StockAlertSubscription.objects.get(user=self.customer, product=self.product)
+        self.assertIsNone(subscription.notified_at)
+
+
+class CustomerNotificationsViewTests(APITestCase):
+    def setUp(self):
+        self.customer = User.objects.create_user(username="a@example.com", password="pw12345678")
+        self.other = User.objects.create_user(username="b@example.com", password="pw12345678")
+        self.category = Category.objects.create(name="Fish", slug="fish")
+        self.product = Product.objects.create(name="Discus", slug="discus", category=self.category, price=1200)
+
+    def test_anonymous_cannot_view(self):
+        response = self.client.get("/api/v1/notifications/mine/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_only_returns_the_requesting_users_notifications(self):
+        CustomerNotification.objects.create(user=self.customer, product=self.product, message="For me")
+        CustomerNotification.objects.create(user=self.other, product=self.product, message="Not for me")
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.get("/api/v1/notifications/mine/")
+
+        data = response.json()
+        self.assertEqual(len(data["notifications"]), 1)
+        self.assertEqual(data["notifications"][0]["message"], "For me")
+
+    def test_unread_count_reflects_unread_rows(self):
+        CustomerNotification.objects.create(user=self.customer, product=self.product, message="Unread")
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.get("/api/v1/notifications/mine/")
+
+        self.assertEqual(response.json()["unread_count"], 1)
+
+
+class CustomerNotificationsMarkReadViewTests(APITestCase):
+    def setUp(self):
+        self.customer = User.objects.create_user(username="a@example.com", password="pw12345678")
+        self.other = User.objects.create_user(username="b@example.com", password="pw12345678")
+        self.category = Category.objects.create(name="Fish", slug="fish")
+        self.product = Product.objects.create(name="Discus", slug="discus", category=self.category, price=1200)
+
+    def test_marks_all_of_the_requesting_users_unread_notifications_read(self):
+        CustomerNotification.objects.create(user=self.customer, product=self.product, message="One")
+        CustomerNotification.objects.create(user=self.customer, product=self.product, message="Two")
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.post("/api/v1/notifications/mine/mark-read/")
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(CustomerNotification.objects.filter(user=self.customer, read_at__isnull=True).exists())
+
+    def test_does_not_mark_other_users_notifications_read(self):
+        other_notification = CustomerNotification.objects.create(user=self.other, product=self.product, message="Not mine")
+        self.client.force_authenticate(user=self.customer)
+
+        self.client.post("/api/v1/notifications/mine/mark-read/")
+
+        other_notification.refresh_from_db()
+        self.assertIsNone(other_notification.read_at)
