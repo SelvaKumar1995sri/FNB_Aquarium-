@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
+import Breadcrumbs from "../../components/public/Breadcrumbs";
 
 const STATUS_LABELS = {
   placed: "Placed",
@@ -39,7 +40,11 @@ export default function OrderDetail() {
   const hasTracking = order.porter_name || order.courier_name;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div>
+      <Breadcrumbs
+        items={[{ label: "My Orders", to: "/account/orders" }, { label: `Order #${order.id}` }]}
+      />
+      <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-semibold text-brand-dark mb-2">Order #{order.id}</h1>
       <p className="text-sm text-gray-600 mb-6">Placed on {new Date(order.created_at).toLocaleDateString()}</p>
 
@@ -94,6 +99,7 @@ export default function OrderDetail() {
           <span>Total</span>
           <span>₹{order.total_amount}</span>
         </div>
+      </div>
       </div>
     </div>
   );

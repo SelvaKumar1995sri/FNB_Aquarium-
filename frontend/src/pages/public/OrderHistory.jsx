@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
+import Breadcrumbs from "../../components/public/Breadcrumbs";
 
 const STATUS_LABELS = {
   placed: "Placed",
@@ -37,7 +38,9 @@ export default function OrderHistory() {
   }, []);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div>
+      <Breadcrumbs items={[{ label: "My Orders" }]} />
+      <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-semibold text-brand-dark mb-6">Your orders</h1>
       {loadError && <p className="text-red-600 mb-4">Couldn't load your orders — please try again later.</p>}
       <div className="grid gap-4">
@@ -82,6 +85,7 @@ export default function OrderHistory() {
         >
           Next
         </button>
+      </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import Breadcrumbs from "../../components/public/Breadcrumbs";
 import { useCart } from "../../context/CartContext";
 
 export default function Cart() {
@@ -56,16 +57,21 @@ export default function Cart() {
 
   if (cart.items.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold text-brand-dark mb-3">Your cart is empty</h1>
-        <p className="text-gray-500 mb-6">Browse the catalog and add something you like.</p>
-        <Link to="/products" className="text-brand-forest hover:underline">Browse products</Link>
+      <div>
+        <Breadcrumbs items={[{ label: "Cart" }]} />
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <h1 className="text-2xl font-semibold text-brand-dark mb-3">Your cart is empty</h1>
+          <p className="text-gray-500 mb-6">Browse the catalog and add something you like.</p>
+          <Link to="/products" className="text-brand-forest hover:underline">Browse products</Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div>
+      <Breadcrumbs items={[{ label: "Cart" }]} />
+      <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-semibold text-brand-dark mb-6">Your cart</h1>
       <div className="grid gap-4 mb-8">
         {cart.items.map((item) => {
@@ -130,6 +136,7 @@ export default function Cart() {
         >
           Proceed to Checkout
         </Link>
+      </div>
       </div>
     </div>
   );

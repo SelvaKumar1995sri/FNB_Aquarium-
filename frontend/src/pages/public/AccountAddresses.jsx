@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
 import AddressForm from "../../components/public/AddressForm";
+import Breadcrumbs from "../../components/public/Breadcrumbs";
 
 export default function AccountAddresses() {
   const navigate = useNavigate();
@@ -69,7 +70,9 @@ export default function AccountAddresses() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div>
+      <Breadcrumbs items={[{ label: "My Account" }]} />
+      <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-semibold text-brand-dark mb-6">Your addresses</h1>
 
       {loadError && <p className="text-red-600 mb-4">Couldn't load your addresses — please try again later.</p>}
@@ -116,6 +119,7 @@ export default function AccountAddresses() {
         error={formError}
         submitLabel={editingAddress ? "Save changes" : "Add address"}
       />
+      </div>
     </div>
   );
 }
