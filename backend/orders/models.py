@@ -35,6 +35,10 @@ class Order(models.Model):
     courier_name = models.CharField(max_length=100, blank=True)
     courier_tracking_number = models.CharField(max_length=100, blank=True)
 
+    # Admin-provided proof of delivery — required when moving to "delivered"
+    # (some customers never respond to confirm receipt themselves).
+    delivery_proof = models.ImageField(upload_to="orders/delivery_proof/", blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

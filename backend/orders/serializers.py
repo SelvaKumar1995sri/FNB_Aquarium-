@@ -24,6 +24,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "razorpay_order_id", "created_at", "updated_at",
             "address", "customer_name", "customer_email",
             "porter_name", "porter_phone", "courier_name", "courier_tracking_number",
+            "delivery_proof",
             "items",
         ]
 
@@ -39,7 +40,7 @@ class AdminOrderStatusUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ["status", "porter_name", "porter_phone", "courier_name", "courier_tracking_number"]
+        fields = ["status", "porter_name", "porter_phone", "courier_name", "courier_tracking_number", "delivery_proof"]
 
     def _tracking_value(self, attrs, field):
         return attrs.get(field, getattr(self.instance, field, "") or "")
@@ -59,6 +60,16 @@ class AdminOrderStatusUpdateSerializer(serializers.ModelSerializer):
         if new_status != "transported" and any(field in attrs for field in tracking_fields):
             raise serializers.ValidationError(
                 "Tracking details can only be set when moving an order to transported."
+            )
+
+        if new_status != "delivered" and "delivery_proof" in attrs:
+            raise serializers.ValidationError(
+                "A delivery proof screenshot can only be set when marking an order delivered."
+            )
+
+        if new_status == "delivered" and not attrs.get("delivery_proof"):
+            raise serializers.ValidationError(
+                {"delivery_proof": "A screenshot of the delivered status from the courier/porter is required."}
             )
 
         if new_status == "transported":

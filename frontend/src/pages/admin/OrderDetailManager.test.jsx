@@ -150,4 +150,54 @@ describe("OrderDetailManager", () => {
 
     expect(screen.queryByRole("combobox")).toBeNull();
   });
+
+  it("shows a screenshot upload field when delivered is selected", async () => {
+    const transportedOrder = { ...PLACED_ORDER, status: "transported", courier_name: "BlueDart", courier_tracking_number: "BD123" };
+    apiClient.get.mockResolvedValueOnce({ data: transportedOrder });
+
+    renderDetail();
+    await screen.findByText("Order #42");
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "delivered" } });
+
+    expect(await screen.findByLabelText(/delivery proof screenshot/i)).toBeTruthy();
+  });
+
+  it("blocks submitting delivered without a screenshot attached", async () => {
+    const transportedOrder = { ...PLACED_ORDER, status: "transported", courier_name: "BlueDart", courier_tracking_number: "BD123" };
+    apiClient.get.mockResolvedValueOnce({ data: transportedOrder });
+
+    renderDetail();
+    await screen.findByText("Order #42");
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "delivered" } });
+    await screen.findByLabelText(/delivery proof screenshot/i);
+    fireEvent.click(screen.getByRole("button", { name: /update status/i }));
+
+    expect(await screen.findByText(/attach a delivery proof screenshot/i)).toBeTruthy();
+    expect(apiClient.patch).not.toHaveBeenCalled();
+  });
+
+  it("submits the delivery proof screenshot as multipart form data", async () => {
+    const transportedOrder = { ...PLACED_ORDER, status: "transported", courier_name: "BlueDart", courier_tracking_number: "BD123" };
+    const deliveredOrder = { ...transportedOrder, status: "delivered" };
+    apiClient.get.mockResolvedValueOnce({ data: transportedOrder });
+    apiClient.patch.mockResolvedValueOnce({ data: deliveredOrder });
+    apiClient.get.mockResolvedValueOnce({ data: deliveredOrder }); // reload after a successful PATCH
+
+    renderDetail();
+    await screen.findByText("Order #42");
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "delivered" } });
+    const file = new File(["contents"], "proof.png", { type: "image/png" });
+    const fileInput = await screen.findByLabelText(/delivery proof screenshot/i);
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    fireEvent.click(screen.getByRole("button", { name: /update status/i }));
+
+    await waitFor(() => expect(apiClient.patch).toHaveBeenCalledWith("/admin/orders/42/", expect.anything()));
+    const [, body] = apiClient.patch.mock.calls[0];
+    expect(body instanceof FormData).toBe(true);
+    expect(body.get("status")).toBe("delivered");
+    expect(body.get("delivery_proof")).toBe(file);
+  });
 });

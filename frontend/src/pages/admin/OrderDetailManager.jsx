@@ -30,6 +30,7 @@ export default function OrderDetailManager() {
   const [porterPhone, setPorterPhone] = useState("");
   const [courierName, setCourierName] = useState("");
   const [courierTrackingNumber, setCourierTrackingNumber] = useState("");
+  const [deliveryProofFile, setDeliveryProofFile] = useState(null);
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -54,6 +55,7 @@ export default function OrderDetailManager() {
     setPorterPhone("");
     setCourierName("");
     setCourierTrackingNumber("");
+    setDeliveryProofFile(null);
   };
 
   const handleTransition = async (event) => {
@@ -61,18 +63,29 @@ export default function OrderDetailManager() {
     if (!selectedStatus) return;
     setIsSaving(true);
     setFormError("");
-    const payload = { status: selectedStatus };
+    let body = { status: selectedStatus };
     if (selectedStatus === "transported") {
       if (trackingMethod === "porter") {
-        payload.porter_name = porterName;
-        payload.porter_phone = porterPhone;
+        body.porter_name = porterName;
+        body.porter_phone = porterPhone;
       } else {
-        payload.courier_name = courierName;
-        payload.courier_tracking_number = courierTrackingNumber;
+        body.courier_name = courierName;
+        body.courier_tracking_number = courierTrackingNumber;
       }
     }
+    if (selectedStatus === "delivered") {
+      if (!deliveryProofFile) {
+        setFormError("Please attach a delivery proof screenshot.");
+        setIsSaving(false);
+        return;
+      }
+      const formData = new FormData();
+      formData.append("status", selectedStatus);
+      formData.append("delivery_proof", deliveryProofFile);
+      body = formData;
+    }
     try {
-      await apiClient.patch(`/admin/orders/${id}/`, payload);
+      await apiClient.patch(`/admin/orders/${id}/`, body);
       resetForm();
       load();
     } catch (error) {
@@ -143,6 +156,12 @@ export default function OrderDetailManager() {
               : `Courier: ${order.courier_name} — ${order.courier_tracking_number}`}
           </p>
         )}
+        {order.delivery_proof && (
+          <div className="mb-3">
+            <p className="text-sm text-gray-600 mb-1">Delivery proof:</p>
+            <img src={order.delivery_proof} alt="Delivery proof screenshot" className="max-w-xs rounded border" />
+          </div>
+        )}
         {nextStatuses.length > 0 && (
           <form onSubmit={handleTransition} className="grid gap-3">
             <select
@@ -209,6 +228,17 @@ export default function OrderDetailManager() {
                   </>
                 )}
               </div>
+            )}
+            {selectedStatus === "delivered" && (
+              <label className="flex flex-col text-sm text-gray-600 gap-1">
+                Delivery proof screenshot
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setDeliveryProofFile(e.target.files[0])}
+                  className="border rounded px-3 py-2"
+                />
+              </label>
             )}
             {formError && <p className="text-red-600 text-sm">{formError}</p>}
             <button

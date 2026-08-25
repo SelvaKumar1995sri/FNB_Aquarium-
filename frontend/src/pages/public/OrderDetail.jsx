@@ -59,6 +59,12 @@ export default function OrderDetail() {
             )}
           </div>
         )}
+        {order.status === "delivered" && order.delivery_proof && (
+          <div className="mt-3 text-sm text-gray-700">
+            <p className="mb-1">Delivery proof:</p>
+            <img src={order.delivery_proof} alt="Delivery proof screenshot" className="max-w-xs rounded border" />
+          </div>
+        )}
       </div>
 
       <div className="border rounded-xl p-4 bg-white shadow-sm mb-6">

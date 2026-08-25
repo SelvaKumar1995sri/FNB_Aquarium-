@@ -1,10 +1,14 @@
 import hashlib
 import hmac
+import io
 import json
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+from PIL import Image
 from rest_framework.test import APITestCase
 
 from accounts.models import Address
@@ -13,6 +17,13 @@ from catalog.models import Category, Product
 from orders.models import CheckoutSession, Order, OrderItem
 
 User = get_user_model()
+
+
+def make_test_image(name="delivery_proof.png"):
+    buffer = io.BytesIO()
+    Image.new("RGB", (1, 1)).save(buffer, format="PNG")
+    buffer.seek(0)
+    return SimpleUploadedFile(name, buffer.read(), content_type="image/png")
 
 
 class CheckoutViewTests(APITestCase):
@@ -582,9 +593,48 @@ class AdminOrderViewSetTests(APITestCase):
         )
         self.client.force_authenticate(user=self.staff)
 
-        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "delivered"})
+        response = self.client.patch(
+            f"/api/v1/admin/orders/{order.id}/",
+            {"status": "delivered", "delivery_proof": make_test_image()},
+            format="multipart",
+        )
 
         self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        self.assertEqual(order.status, "delivered")
+        self.assertTrue(order.delivery_proof)
+
+    def test_moving_to_delivered_without_a_screenshot_is_rejected(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_delivered_missing_proof",
+            status="transported", courier_name="BlueDart", courier_tracking_number="BD123",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/v1/admin/orders/{order.id}/", {"status": "delivered"})
+
+        self.assertEqual(response.status_code, 400)
+        order.refresh_from_db()
+        self.assertEqual(order.status, "transported")
+
+    def test_delivery_proof_rejected_on_non_delivered_transition(self):
+        order = Order.objects.create(
+            user=self.customer, address=self.address, total_amount="100.00",
+            razorpay_order_id="order_proof_too_early", status="packed",
+        )
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(
+            f"/api/v1/admin/orders/{order.id}/",
+            {
+                "status": "transported", "porter_name": "Ravi", "porter_phone": "9999999999",
+                "delivery_proof": make_test_image(),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 400)
 
     def test_tracking_fields_rejected_on_non_transported_transition(self):
         order = Order.objects.create(
