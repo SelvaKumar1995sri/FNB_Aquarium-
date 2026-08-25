@@ -1,5 +1,5 @@
 import axios from "axios";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import { apiClient } from "../api/client";
 
@@ -24,21 +24,20 @@ export function AuthProvider({ children }) {
     setProfile(null);
   };
 
-  useEffect(() => {
-    const interceptorId = apiClient.interceptors.request.use((config) => {
+  // Registration is a plain function (not itself a hook) so it can be called
+  // both synchronously during render (below) and again from inside the
+  // effect's setup phase (further down) — see the comments at each call site
+  // for why both are needed.
+  const registerInterceptors = () => {
+    const requestInterceptorId = apiClient.interceptors.request.use((config) => {
       const token = localStorage.getItem("access");
       if (token) config.headers.Authorization = `Bearer ${token}`;
       return config;
     });
-    return () => apiClient.interceptors.request.eject(interceptorId);
-  }, []);
 
-  useEffect(() => {
     // Transparently refresh an expired access token on a 401 and retry the
-    // failed request once. Registered on mount (same lifecycle as the request
-    // interceptor above), so it's already in place before the mount-verify
-    // effect below fires its /auth/me/ call.
-    const interceptorId = apiClient.interceptors.response.use(
+    // failed request once.
+    const responseInterceptorId = apiClient.interceptors.response.use(
       (response) => response,
       async (error) => {
         const { config, response } = error;
@@ -106,7 +105,43 @@ export function AuthProvider({ children }) {
         }
       }
     );
-    return () => apiClient.interceptors.response.eject(interceptorId);
+
+    return { requestInterceptorId, responseInterceptorId };
+  };
+
+  // Registered synchronously during render — deliberately NOT only inside a
+  // useEffect — so both interceptors are already in place before any CHILD
+  // component's own mount effect can fire a request. React fires a child's
+  // effects before its parent's, so registering only inside a useEffect was
+  // too late: CartContext/CustomerNotificationsContext (children of this
+  // provider) each fetch on mount, and those requests raced ahead of this
+  // registration, going out with no Authorization header — a 401 that,
+  // unlike other request failures, this provider was never asked to retry
+  // (the request that lost the race started before the interceptor existed
+  // to react to it).
+  const interceptorIdsRef = useRef(null);
+  if (interceptorIdsRef.current === null) {
+    interceptorIdsRef.current = registerInterceptors();
+  }
+
+  useEffect(() => {
+    // React's StrictMode (development only) simulates an extra unmount+remount
+    // of effects right after the initial commit, specifically to check that
+    // cleanup is correct. Our own registration lives in the render body above
+    // (not here) so it can run before children's effects — but that means
+    // this effect's cleanup, when StrictMode fires it during that simulated
+    // unmount, must re-register on the immediately-following simulated
+    // remount, or the interceptors would be gone for the rest of the page's
+    // life. In a normal (non-StrictMode) mount this check is a no-op, since
+    // the render-phase registration above already set the ref.
+    if (interceptorIdsRef.current === null) {
+      interceptorIdsRef.current = registerInterceptors();
+    }
+    return () => {
+      apiClient.interceptors.request.eject(interceptorIdsRef.current.requestInterceptorId);
+      apiClient.interceptors.response.eject(interceptorIdsRef.current.responseInterceptorId);
+      interceptorIdsRef.current = null;
+    };
   }, []);
 
   useEffect(() => {

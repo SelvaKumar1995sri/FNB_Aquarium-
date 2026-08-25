@@ -1,4 +1,5 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, render, renderHook, waitFor } from "@testing-library/react";
+import { StrictMode, useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient } from "../api/client";
@@ -131,6 +132,58 @@ describe("AuthContext", () => {
     });
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.isStaff).toBe(false);
+  });
+
+  it("registers the request interceptor before a child component's mount effect can fire a request", async () => {
+    function ChildThatFetchesOnMount() {
+      useEffect(() => {
+        apiClient.get("/child-endpoint/");
+      }, []);
+      return null;
+    }
+    apiClient.get.mockResolvedValue({ data: {} });
+
+    render(
+      <AuthProvider>
+        <ChildThatFetchesOnMount />
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith("/child-endpoint/"));
+
+    const interceptorRegisteredOrder = apiClient.interceptors.request.use.mock.invocationCallOrder[0];
+    const childFetchOrder = apiClient.get.mock.invocationCallOrder[0];
+    expect(interceptorRegisteredOrder).toBeLessThan(childFetchOrder);
+  });
+
+  it("keeps the request interceptor registered after React StrictMode's simulated remount", async () => {
+    function ChildThatFetchesOnMount() {
+      useEffect(() => {
+        apiClient.get("/child-endpoint/");
+      }, []);
+      return null;
+    }
+    apiClient.get.mockResolvedValue({ data: {} });
+
+    render(
+      <StrictMode>
+        <AuthProvider>
+          <ChildThatFetchesOnMount />
+        </AuthProvider>
+      </StrictMode>
+    );
+
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith("/child-endpoint/"));
+
+    // StrictMode (dev only) mounts, simulates an unmount, then remounts
+    // effects once as a cleanup-correctness check. If ejecting the
+    // interceptor on that simulated unmount isn't paired with registering
+    // it again on the simulated remount, the app is left with no
+    // interceptor at all for the rest of its life — every later request
+    // goes out with no Authorization header.
+    const useCalls = apiClient.interceptors.request.use.mock.calls.length;
+    const ejectCalls = apiClient.interceptors.request.eject.mock.calls.length;
+    expect(useCalls).toBeGreaterThan(ejectCalls);
   });
 
   it("logout clears stored tokens and profile", async () => {
