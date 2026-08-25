@@ -969,18 +969,18 @@ import SpecificationAccordion from "./SpecificationAccordion";
 describe("SpecificationAccordion", () => {
   it("renders nothing when content is empty", () => {
     const { container } = render(<SpecificationAccordion content="" />);
-    expect(container).toBeEmptyDOMElement();
+    expect(container.firstChild).toBeNull();
   });
 
   it("is collapsed by default", () => {
     render(<SpecificationAccordion content="Some spec text" />);
-    expect(screen.queryByText("Some spec text")).not.toBeInTheDocument();
+    expect(screen.queryByText("Some spec text")).toBeNull();
   });
 
   it("shows the content after clicking the toggle", () => {
     render(<SpecificationAccordion content="Some spec text" />);
     fireEvent.click(screen.getByText("SPECIFICATION"));
-    expect(screen.getByText("Some spec text")).toBeInTheDocument();
+    expect(screen.getByText("Some spec text")).toBeTruthy();
   });
 
   it("hides the content again after clicking twice", () => {
@@ -988,7 +988,7 @@ describe("SpecificationAccordion", () => {
     const toggle = screen.getByText("SPECIFICATION");
     fireEvent.click(toggle);
     fireEvent.click(toggle);
-    expect(screen.queryByText("Some spec text")).not.toBeInTheDocument();
+    expect(screen.queryByText("Some spec text")).toBeNull();
   });
 });
 ```
@@ -1093,7 +1093,7 @@ describe("NotifyMeButton", () => {
 
   it("shows 'You'll be notified' and is disabled when already subscribed", () => {
     render(<NotifyMeButton product={{ ...PRODUCT, stock_alert_subscribed: true }} />);
-    expect(screen.getByText("You'll be notified")).toBeDisabled();
+    expect(screen.getByText("You'll be notified").disabled).toBe(true);
   });
 
   it("redirects to /login when clicked while logged out", () => {
@@ -1113,7 +1113,7 @@ describe("NotifyMeButton", () => {
     fireEvent.click(screen.getByText("Notify Me"));
 
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith("/notifications/stock-alerts/", { product: 1 }));
-    await waitFor(() => expect(screen.getByText("You'll be notified")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("You'll be notified")).toBeTruthy());
   });
 
   it("stays in the idle state if the subscribe call fails", async () => {
@@ -1123,7 +1123,7 @@ describe("NotifyMeButton", () => {
     fireEvent.click(screen.getByText("Notify Me"));
 
     await waitFor(() => expect(apiClient.post).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByText("Notify Me")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Notify Me")).toBeTruthy());
   });
 });
 ```
