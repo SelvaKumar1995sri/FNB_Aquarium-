@@ -269,11 +269,11 @@ export default function Header() {
         id="main-sidebar-nav"
         aria-label="Main navigation"
         inert={!isOpen}
-        className={`fixed top-0 left-0 h-full w-64 bg-brand-dark text-white z-50 shadow-xl transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full w-64 bg-brand-dark text-white z-50 shadow-xl transition-transform duration-300 flex flex-col ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
           <NavLink to="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
             <img src="/logo.png" alt="FNB Aquatic Studio" className="h-8 w-auto" />
           </NavLink>
@@ -286,7 +286,7 @@ export default function Header() {
             &times;
           </button>
         </div>
-        <div className="flex flex-col gap-1 p-4">
+        <div className="flex flex-col gap-1 p-4 overflow-y-auto flex-1">
           {NAV_LINKS.map((link) => (
             <NavLink
               key={link.to}
