@@ -29,13 +29,21 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
+    stock_alert_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             "id", "name", "slug", "category", "description", "note", "specification", "price",
-            "stock_quantity", "in_stock", "is_featured", "created_at", "images",
+            "stock_quantity", "in_stock", "is_featured", "created_at", "images", "stock_alert_subscribed",
         ]
+
+    def get_stock_alert_subscribed(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated:
+            return False
+        return obj.stock_alert_subscriptions.filter(user=user, notified_at__isnull=True).exists()
 
 
 class PortfolioItemSerializer(serializers.ModelSerializer):

@@ -7,6 +7,7 @@ from PIL import Image
 from rest_framework.test import APITestCase
 
 from catalog.models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
+from notifications.models import StockAlertSubscription
 
 User = get_user_model()
 
@@ -499,6 +500,39 @@ class ProductNoteSpecificationTests(APITestCase):
         product.refresh_from_db()
         self.assertEqual(product.note, "Free home delivery for this product")
         self.assertIn("Bullet one", product.specification)
+
+
+class ProductStockAlertSubscribedFieldTests(APITestCase):
+    def setUp(self):
+        self.customer = User.objects.create_user(username="a@example.com", password="pw12345678")
+        self.category = Category.objects.create(name="Fish", slug="fish")
+        self.product = Product.objects.create(name="Discus", slug="discus", category=self.category, price=1200)
+
+    def test_anonymous_sees_false(self):
+        response = self.client.get(f"/api/v1/products/{self.product.slug}/")
+        self.assertFalse(response.json()["stock_alert_subscribed"])
+
+    def test_authenticated_without_subscription_sees_false(self):
+        self.client.force_authenticate(user=self.customer)
+        response = self.client.get(f"/api/v1/products/{self.product.slug}/")
+        self.assertFalse(response.json()["stock_alert_subscribed"])
+
+    def test_authenticated_with_active_subscription_sees_true(self):
+        StockAlertSubscription.objects.create(user=self.customer, product=self.product)
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.get(f"/api/v1/products/{self.product.slug}/")
+
+        self.assertTrue(response.json()["stock_alert_subscribed"])
+
+    def test_authenticated_with_already_notified_subscription_sees_false(self):
+        from django.utils import timezone
+        StockAlertSubscription.objects.create(user=self.customer, product=self.product, notified_at=timezone.now())
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.get(f"/api/v1/products/{self.product.slug}/")
+
+        self.assertFalse(response.json()["stock_alert_subscribed"])
 
 
 class ProductImageWritePermissionTests(APITestCase):
