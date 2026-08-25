@@ -16,6 +16,8 @@ export default function ProductsManager() {
     category: "",
     price: "",
     description: "",
+    note: "",
+    specification: "",
     stock_quantity: 0,
     is_featured: false,
   });
@@ -53,6 +55,8 @@ export default function ProductsManager() {
       category: "",
       price: "",
       description: "",
+      note: "",
+      specification: "",
       stock_quantity: 0,
       is_featured: false,
     });
@@ -72,6 +76,8 @@ export default function ProductsManager() {
       category: product.category ? String(product.category) : "",
       price: String(product.price),
       description: product.description || "",
+      note: product.note || "",
+      specification: product.specification || "",
       stock_quantity: product.stock_quantity,
       is_featured: product.is_featured,
     });
@@ -244,6 +250,19 @@ export default function ProductsManager() {
             </select>
             <input required type="number" placeholder="Price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="border rounded px-3 py-2" />
             <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="border rounded px-3 py-2" />
+            <textarea placeholder="Note (optional, e.g. 'Free home delivery')" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="border rounded px-3 py-2" />
+            <div>
+              <textarea
+                placeholder="Specification (optional)"
+                value={form.specification}
+                onChange={(e) => setForm({ ...form, specification: e.target.value })}
+                className="border rounded px-3 py-2 w-full"
+                rows={4}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Use **bold** and lines starting with "- " for bullet points.
+              </p>
+            </div>
             <label className="flex flex-col text-sm text-gray-600">
               Stock quantity
               <input
