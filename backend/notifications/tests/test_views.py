@@ -204,6 +204,13 @@ class StockAlertSubscribeViewTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    def test_subscribing_with_a_non_numeric_product_id_returns_400_not_500(self):
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.post("/api/v1/notifications/stock-alerts/", {"product": "not-a-number"})
+
+        self.assertEqual(response.status_code, 400)
+
     def test_resubscribing_after_being_notified_reactivates_the_subscription(self):
         StockAlertSubscription.objects.create(user=self.customer, product=self.product, notified_at=timezone.now())
         self.client.force_authenticate(user=self.customer)

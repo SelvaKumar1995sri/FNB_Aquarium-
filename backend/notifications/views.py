@@ -90,7 +90,12 @@ class StockAlertSubscribeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        product = get_object_or_404(Product, pk=request.data.get("product"))
+        product_id = request.data.get("product")
+        try:
+            product_id = int(product_id)
+        except (TypeError, ValueError):
+            return Response({"product": "A valid product id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        product = get_object_or_404(Product, pk=product_id)
         if product.in_stock:
             return Response({"detail": "This product is already in stock."}, status=status.HTTP_400_BAD_REQUEST)
         StockAlertSubscription.objects.update_or_create(

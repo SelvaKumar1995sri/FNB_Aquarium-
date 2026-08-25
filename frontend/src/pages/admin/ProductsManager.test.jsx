@@ -34,13 +34,30 @@ async function openForm() {
   await screen.findByRole("combobox");
 }
 
-async function fillAndSubmit({ name = "Discus", slug = "discus", price = "100", stock = "10" } = {}) {
+async function fillAndSubmit({
+  name = "Discus",
+  slug = "discus",
+  price = "100",
+  stock = "10",
+  note,
+  specification,
+} = {}) {
   await openForm();
   fireEvent.change(screen.getByPlaceholderText("Name"), { target: { value: name } });
   fireEvent.change(screen.getByPlaceholderText("Slug"), { target: { value: slug } });
   fireEvent.change(screen.getByRole("combobox"), { target: { value: String(CATEGORY.id) } });
   fireEvent.change(screen.getByPlaceholderText("Price"), { target: { value: price } });
   fireEvent.change(screen.getByPlaceholderText("Stock quantity"), { target: { value: stock } });
+  if (note !== undefined) {
+    fireEvent.change(screen.getByPlaceholderText("Note (optional, e.g. 'Free home delivery')"), {
+      target: { value: note },
+    });
+  }
+  if (specification !== undefined) {
+    fireEvent.change(screen.getByPlaceholderText("Specification (optional)"), {
+      target: { value: specification },
+    });
+  }
   fireEvent.click(screen.getByRole("button", { name: /add product/i }));
   await waitFor(() => expect(apiClient.post).toHaveBeenCalled());
 }
@@ -117,6 +134,63 @@ describe("ProductsManager — list + modal", () => {
 
     await waitFor(() => expect(apiClient.delete).toHaveBeenCalledWith("/product-images/1/"));
     expect(await screen.findByText("Cannot delete image.")).toBeTruthy();
+  });
+});
+
+describe("ProductsManager — note and specification fields", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockInitialLoad();
+  });
+
+  afterEach(() => cleanup());
+
+  it("submits the typed note and specification in the create payload", async () => {
+    apiClient.post.mockResolvedValueOnce({ data: {} });
+    render(<ProductsManager />);
+    await screen.findByRole("button", { name: /new product/i });
+
+    await fillAndSubmit({ note: "Free home delivery", specification: "- Tank size: 20L" });
+
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/products/",
+      expect.objectContaining({ note: "Free home delivery", specification: "- Tank size: 20L" })
+    );
+  });
+
+  it("creates a product successfully when note and specification are left blank", async () => {
+    apiClient.post.mockResolvedValueOnce({ data: {} });
+    render(<ProductsManager />);
+    await screen.findByRole("button", { name: /new product/i });
+
+    await fillAndSubmit();
+
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/products/",
+      expect.objectContaining({ note: "", specification: "" })
+    );
+    expect(await screen.findByText(/product created/i)).toBeTruthy();
+  });
+
+  it("pre-fills the note and specification textareas when editing an existing product", async () => {
+    const productWithNoteAndSpec = {
+      ...PRODUCT,
+      note: "Free home delivery",
+      specification: "- Tank size: 20L",
+    };
+    mockInitialLoad([productWithNoteAndSpec]);
+    render(<ProductsManager />);
+    await screen.findByText("Discus");
+
+    fireEvent.click(screen.getByRole("button", { name: /^edit$/i }));
+
+    expect(
+      await screen.findByPlaceholderText("Note (optional, e.g. 'Free home delivery')")
+    ).toHaveProperty("value", "Free home delivery");
+    expect(screen.getByPlaceholderText("Specification (optional)")).toHaveProperty(
+      "value",
+      "- Tank size: 20L"
+    );
   });
 });
 
