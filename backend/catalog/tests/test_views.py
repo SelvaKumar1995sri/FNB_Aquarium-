@@ -7,7 +7,7 @@ from PIL import Image
 from rest_framework.test import APITestCase
 
 from catalog.models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
-from notifications.models import StockAlertSubscription
+from notifications.models import CustomerNotification, StockAlertSubscription
 
 User = get_user_model()
 
@@ -595,3 +595,49 @@ class ProductImageWritePermissionTests(APITestCase):
         self.assertTrue(
             ProductImage.objects.filter(product=self.product, alt_text="Discus").exists()
         )
+
+
+class ProductRestockNotificationTests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(username="restock-staff", password="pw12345", is_staff=True)
+        self.customer = User.objects.create_user(username="a@example.com", password="pw12345678")
+        self.category = Category.objects.create(name="Fish", slug="fish")
+        self.product = Product.objects.create(
+            name="Discus", slug="discus", category=self.category, price=1200, stock_quantity=0,
+        )
+        StockAlertSubscription.objects.create(user=self.customer, product=self.product)
+        self.client.force_authenticate(user=self.staff)
+
+    def test_patching_stock_from_zero_to_positive_notifies_subscribers(self):
+        response = self.client.patch(f"/api/v1/products/{self.product.slug}/", {"stock_quantity": 5})
+
+        self.assertEqual(response.status_code, 200)
+        notification = CustomerNotification.objects.get(user=self.customer)
+        self.assertIn("Discus", notification.message)
+        subscription = StockAlertSubscription.objects.get(user=self.customer, product=self.product)
+        self.assertIsNotNone(subscription.notified_at)
+
+    def test_patching_stock_between_two_positive_values_does_not_notify(self):
+        self.product.stock_quantity = 3
+        self.product.save()
+
+        response = self.client.patch(f"/api/v1/products/{self.product.slug}/", {"stock_quantity": 7})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(CustomerNotification.objects.filter(user=self.customer).exists())
+
+    def test_add_stock_action_from_zero_notifies_subscribers(self):
+        response = self.client.post(f"/api/v1/products/{self.product.slug}/add-stock/", {"quantity": 10})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(CustomerNotification.objects.filter(user=self.customer).exists())
+
+    def test_a_second_restock_without_resubscribing_does_not_notify_again(self):
+        self.client.patch(f"/api/v1/products/{self.product.slug}/", {"stock_quantity": 5})
+        self.product.refresh_from_db()
+        self.product.stock_quantity = 0
+        self.product.save()
+
+        self.client.patch(f"/api/v1/products/{self.product.slug}/", {"stock_quantity": 8})
+
+        self.assertEqual(CustomerNotification.objects.filter(user=self.customer).count(), 1)

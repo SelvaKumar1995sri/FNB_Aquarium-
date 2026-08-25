@@ -6,6 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 
+from notifications.services import notify_restock
+
 from .models import BlogPost, Category, PortfolioItem, Product, ProductImage, Video
 from .pagination import CategoryPagination
 from .permissions import IsStaffOrReadOnly
@@ -46,6 +48,12 @@ class ProductViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
         return queryset
+
+    def perform_update(self, serializer):
+        was_out_of_stock = serializer.instance.stock_quantity == 0
+        super().perform_update(serializer)
+        if was_out_of_stock and serializer.instance.stock_quantity > 0:
+            notify_restock(serializer.instance)
 
     def _find_duplicate(self, name, category_id):
         try:
@@ -99,8 +107,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         if quantity <= 0:
             return Response({"quantity": "Quantity must be a positive integer."}, status=status.HTTP_400_BAD_REQUEST)
 
+        was_out_of_stock = product.stock_quantity == 0
         Product.objects.filter(pk=product.pk).update(stock_quantity=F("stock_quantity") + quantity)
         product.refresh_from_db()
+        if was_out_of_stock and product.stock_quantity > 0:
+            notify_restock(product)
         return Response(ProductSerializer(product, context={"request": request}).data)
 
 
