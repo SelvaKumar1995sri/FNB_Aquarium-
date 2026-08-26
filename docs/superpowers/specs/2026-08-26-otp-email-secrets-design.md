@@ -253,13 +253,13 @@ development. `staging.py` and `production.py` inherit the SES backend from
 
 ### 6.2 IAM + SSM (manual console/CLI steps, documented in the implementation plan)
 
-1. Create SSM `SecureString` parameters under a `/fnb-aqua/staging/` prefix:
-   `/fnb-aqua/staging/SECRET_KEY`, `/fnb-aqua/staging/DATABASE_URL`,
-   `/fnb-aqua/staging/RAZORPAY_KEY_ID`, `/fnb-aqua/staging/RAZORPAY_KEY_SECRET`,
-   `/fnb-aqua/staging/RAZORPAY_WEBHOOK_SECRET`,
-   `/fnb-aqua/staging/DEFAULT_FROM_EMAIL`.
+1. Create SSM `SecureString` parameters under a `/fnbaqua/staging/` prefix:
+   `/fnbaqua/staging/SECRET_KEY`, `/fnbaqua/staging/DATABASE_URL`,
+   `/fnbaqua/staging/RAZORPAY_KEY_ID`, `/fnbaqua/staging/RAZORPAY_KEY_SECRET`,
+   `/fnbaqua/staging/RAZORPAY_WEBHOOK_SECRET`,
+   `/fnbaqua/staging/DEFAULT_FROM_EMAIL`.
 2. Create an IAM policy granting `ssm:GetParameter`/`ssm:GetParametersByPath`
-   scoped to `arn:aws:ssm:*:*:parameter/fnb-aqua/staging/*` plus
+   scoped to `arn:aws:ssm:*:*:parameter/fnbaqua/staging/*` plus
    `kms:Decrypt` on the key used for the `SecureString`s (the default
    `alias/aws/ssm` key is fine at this scale).
 3. Attach that policy to an IAM role, attach the role to the EC2 instance
@@ -280,7 +280,7 @@ import boto3
 if os.environ.get("LOAD_SECRETS_FROM_SSM") == "true":
     ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "ap-south-1"))
     paginator = ssm.get_paginator("get_parameters_by_path")
-    for page in paginator.paginate(Path="/fnb-aqua/staging/", WithDecryption=True):
+    for page in paginator.paginate(Path="/fnbaqua/staging/", WithDecryption=True):
         for param in page["Parameters"]:
             os.environ[param["Name"].rsplit("/", 1)[-1]] = param["Value"]
 else:
