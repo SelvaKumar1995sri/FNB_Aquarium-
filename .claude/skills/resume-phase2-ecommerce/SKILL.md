@@ -31,7 +31,7 @@ A staff-only admin notification system with no dedicated notification log table:
 
 ## Known outstanding items (not sub-plan work; nothing is queued behind them since Phase 2 is done)
 
-- `AWS_DEPLOYMENT.md` needs `RAZORPAY_*` env-var documentation before a real deploy (flagged during Sub-plan 3's final review, never yet acted on).
+- Production AWS deployment (real domain, `RAZORPAY_*` live keys, SES, OTP registration) is now planned in detail — see the `aws-production-launch` skill and `AWS_DEPLOYMENT.md`, not yet executed.
 - `InquiriesManager.jsx` still lacks pagination, unlike `OrdersManager.jsx`/`OrderHistory.jsx` (flagged during Sub-plan 4's final review).
 - Staff have no in-app way to correct a tracking number after an order reaches `transported` (only via Django admin) — flagged during Sub-plan 4's final review.
 - Sub-plan 5's final review surfaced several deferred Minors, most notably: no test asserting one staff member's `seen` action doesn't affect another staff member's unread counts (the central invariant of the per-user `AdminNotificationState` design, currently unasserted); the notification dropdown has no click-outside/Escape-to-close handling; no `Header.test.jsx` despite `Header.jsx` now consuming four contexts with real conditional logic.
