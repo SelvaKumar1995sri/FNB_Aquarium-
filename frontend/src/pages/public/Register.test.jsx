@@ -43,6 +43,9 @@ describe("Register", () => {
       if (url === "/addresses/") {
         return Promise.resolve({ data: { results: [] } });
       }
+      if (url === "/orders/") {
+        return Promise.resolve({ data: { results: [] } });
+      }
       throw new Error("unexpected get " + url);
     });
 

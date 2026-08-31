@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
 import AddressForm from "../../components/public/AddressForm";
 import Breadcrumbs from "../../components/public/Breadcrumbs";
+import { useAuth } from "../../context/AuthContext";
+
+const STATUS_LABELS = {
+  placed: "Placed",
+  packed: "Packed",
+  transported: "Transported",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+
+const RECENT_ORDERS_LIMIT = 3;
 
 export default function AccountAddresses() {
   const navigate = useNavigate();
@@ -14,11 +25,14 @@ export default function AccountAddresses() {
   // Later visits to this page (from "My Account") have no such state and
   // behave as a normal address manager.
   const redirectHomeAfterAdd = Boolean(useLocation().state?.redirectHomeAfterAdd);
+  const { profile } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [loadError, setLoadError] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [ordersError, setOrdersError] = useState(false);
 
   const load = () =>
     apiClient
@@ -31,6 +45,16 @@ export default function AccountAddresses() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    apiClient
+      .get("/orders/")
+      .then((response) => {
+        setRecentOrders(response.data.results.slice(0, RECENT_ORDERS_LIMIT));
+        setOrdersError(false);
+      })
+      .catch(() => setOrdersError(true));
   }, []);
 
   const resetForm = () => {
@@ -73,7 +97,51 @@ export default function AccountAddresses() {
     <div>
       <Breadcrumbs items={[{ label: "My Account" }]} />
       <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-semibold text-brand-dark mb-6">Your addresses</h1>
+      <h1 className="text-2xl font-semibold text-brand-dark mb-6">Your account</h1>
+
+      {profile && (
+        <div className="border rounded-xl p-4 mb-8 bg-white shadow-sm">
+          <h2 className="font-medium text-brand-dark mb-2">Basic details</h2>
+          <p className="text-sm text-gray-700">{profile.name}</p>
+          <p className="text-sm text-gray-600">{profile.email}</p>
+          {profile.phone && <p className="text-sm text-gray-600">{profile.phone}</p>}
+        </div>
+      )}
+
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-medium text-brand-dark">Recent orders</h2>
+          <Link to="/account/orders" className="text-sm text-brand-forest hover:underline">
+            View all orders
+          </Link>
+        </div>
+        {ordersError && (
+          <p className="text-red-600 text-sm mb-2">Couldn't load your orders — please try again later.</p>
+        )}
+        <div className="grid gap-3">
+          {recentOrders.map((order) => (
+            <Link
+              key={order.id}
+              to={`/account/orders/${order.id}`}
+              className="border rounded-xl p-4 flex justify-between items-center bg-white shadow-sm hover:shadow-md transition"
+            >
+              <div>
+                <p className="font-medium text-brand-dark">Order #{order.id}</p>
+                <p className="text-sm text-gray-600">{new Date(order.created_at).toLocaleDateString()}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-brand-forest">{STATUS_LABELS[order.status]}</p>
+                <p className="text-sm text-gray-600">₹{order.total_amount}</p>
+              </div>
+            </Link>
+          ))}
+          {recentOrders.length === 0 && !ordersError && (
+            <p className="text-gray-500 text-sm">You haven't placed any orders yet.</p>
+          )}
+        </div>
+      </div>
+
+      <h2 className="font-medium text-brand-dark mb-2">Your addresses</h2>
 
       {loadError && <p className="text-red-600 mb-4">Couldn't load your addresses — please try again later.</p>}
 
