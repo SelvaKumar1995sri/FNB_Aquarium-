@@ -2,8 +2,8 @@ import { useState } from "react";
 
 function MainImage({ image, alt }) {
   return (
-    <div className="w-full aspect-square bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden p-6">
-      <img src={image} alt={alt} className="max-w-full max-h-full object-contain" />
+    <div className="w-full max-w-md aspect-square bg-gray-50 rounded-lg overflow-hidden">
+      <img src={image} alt={alt} className="w-full h-full object-cover" />
     </div>
   );
 }
@@ -29,14 +29,14 @@ export default function ProductGallery({ images, productName }) {
             onClick={() => setSelectedIndex(index)}
             aria-label={`View image ${index + 1} of ${images.length}`}
             aria-current={index === selectedIndex}
-            className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded border-2 bg-gray-50 p-1 ${
+            className={`h-16 w-16 shrink-0 overflow-hidden rounded border-2 bg-gray-50 ${
               index === selectedIndex ? "border-brand-forest" : "border-transparent"
             }`}
           >
             <img
               src={img.image}
               alt={`${productName} thumbnail ${index + 1}`}
-              className="max-h-full max-w-full object-contain"
+              className="w-full h-full object-cover"
             />
           </button>
         ))}
