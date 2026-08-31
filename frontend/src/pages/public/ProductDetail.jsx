@@ -6,6 +6,8 @@ import Breadcrumbs from "../../components/public/Breadcrumbs";
 import Modal from "../../components/common/Modal";
 import InquiryForm from "../../components/public/InquiryForm";
 import NotifyMeButton from "../../components/public/NotifyMeButton";
+import ProductGallery from "../../components/public/ProductGallery";
+import ShareButton from "../../components/public/ShareButton";
 import SpecificationAccordion from "../../components/public/SpecificationAccordion";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
@@ -62,18 +64,13 @@ export default function ProductDetail() {
       <Breadcrumbs items={[{ label: "Products", to: "/products" }, { label: product.name }]} />
       <div className="px-4 py-8 grid gap-8 md:grid-cols-2">
         <div>
-          {product.images?.[0] && (
-            <div className="w-full aspect-square bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden p-6">
-              <img
-                src={product.images[0].image}
-                alt={product.name}
-                className="max-w-full max-h-full object-contain"
-              />
-            </div>
-          )}
+          <ProductGallery images={product.images} productName={product.name} />
         </div>
         <div>
-          <h1 className="text-2xl font-semibold">{product.name}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-2xl font-semibold">{product.name}</h1>
+            <ShareButton title={product.name} />
+          </div>
           <p className="text-lg text-gray-700 mt-1">₹{product.price}</p>
           <p className="mt-4">{product.description}</p>
 
