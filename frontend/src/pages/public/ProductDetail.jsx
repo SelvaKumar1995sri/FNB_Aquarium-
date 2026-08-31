@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
@@ -11,11 +11,13 @@ import ShareButton from "../../components/public/ShareButton";
 import SpecificationAccordion from "../../components/public/SpecificationAccordion";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
+import { getAncestors } from "../../utils/categoryTree";
 
 export default function ProductDetail() {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
   const [productError, setProductError] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [status, setStatus] = useState("idle"); // idle | adding | added | error
   const [cartError, setCartError] = useState("");
@@ -33,6 +35,30 @@ export default function ProductDetail() {
       .then((response) => setProduct(response.data))
       .catch(() => setProductError(true));
   }, [slug]);
+
+  useEffect(() => {
+    apiClient
+      .get("/categories/")
+      .then((response) => setCategories(response.data.results))
+      .catch(() => {});
+  }, []);
+
+  const breadcrumbItems = useMemo(() => {
+    if (!product) return [];
+    const category = categories.find((candidate) => candidate.id === product.category);
+    if (!category) {
+      return [{ label: "Products", to: "/products" }, { label: product.name }];
+    }
+    const ancestorCrumbs = getAncestors(category, categories).map((ancestor) => ({
+      label: ancestor.name,
+      to: `/category/${ancestor.slug}`,
+    }));
+    return [
+      ...ancestorCrumbs,
+      { label: category.name, to: `/category/${category.slug}` },
+      { label: product.name },
+    ];
+  }, [product, categories]);
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
@@ -61,7 +87,7 @@ export default function ProductDetail() {
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: "Products", to: "/products" }, { label: product.name }]} />
+      <Breadcrumbs items={breadcrumbItems} />
       <div className="px-4 py-8 grid gap-8 md:grid-cols-2">
         <div>
           <ProductGallery images={product.images} productName={product.name} />
