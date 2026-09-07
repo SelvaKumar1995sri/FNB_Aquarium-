@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import { apiClient } from "../../api/client";
 import { describeError } from "../../api/describeError";
@@ -105,6 +105,9 @@ export default function OrderDetailManager() {
 
   return (
     <div className="px-4 py-8 max-w-2xl">
+      <Link to="/admin/orders" className="text-sm text-brand-forest hover:underline mb-4 inline-block">
+        ← Back to orders
+      </Link>
       <h1 className="text-xl font-semibold mb-2">Order #{order.id}</h1>
       <p className="text-sm text-gray-600 mb-6">Placed on {new Date(order.created_at).toLocaleDateString()}</p>
 
